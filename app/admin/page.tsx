@@ -15,18 +15,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ProductForm } from "@/components/admin/ProductForm";
 import { ServiceForm } from "@/components/admin/ServiceForm";
-import { ChevronRight, Plus, Edit, Trash2, BarChart3 } from "lucide-react";
+import { ChevronRight, Plus, Edit, BarChart3 } from "lucide-react";
+import { DeleteButton } from "@/components/admin/DeleteButton";
 
 export default function AdminPage() {
   const { toast } = useToast();
   const [products, setProducts] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<any>(null);
   const [editingService, setEditingService] = useState<any>(null);
 
   // Fetch data
@@ -49,13 +47,10 @@ export default function AdminPage() {
   }, []);
 
   const handleDeleteProduct = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this product?")) return;
-
     try {
-      const res = await fetch("/api/products", {
+      const res = await fetch(`/api/products/${id}`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
+        credentials: "include",
       });
 
       if (!res.ok) throw new Error("Failed to delete");
@@ -100,19 +95,13 @@ export default function AdminPage() {
     }
   };
 
-  const handleProductSuccess = () => {
-    fetchProducts();
-    setProductDialogOpen(false);
-    setEditingProduct(null);
-  };
-
   const handleServiceSuccess = () => {
     fetchServices();
     setServiceDialogOpen(false);
     setEditingService(null);
   };
 
-  // Dummy stats (could be real from orders)
+  // Stats
   const totalRevenue = 1234.56;
   const totalOrders = 42;
   const totalBookings = 18;
@@ -171,32 +160,12 @@ export default function AdminPage() {
               <TabsContent value="products" className="space-y-6">
                 <div className="flex justify-between items-center">
                   <h2 className="text-2xl font-bold">Manage Products</h2>
-                  <Dialog
-                    open={productDialogOpen}
-                    onOpenChange={setProductDialogOpen}
-                  >
-                    <DialogTrigger asChild>
-                      <Button onClick={() => setEditingProduct(null)}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Product
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                      <DialogHeader>
-                        <DialogTitle>
-                          {editingProduct ? "Edit Product" : "Add New Product"}
-                        </DialogTitle>
-                      </DialogHeader>
-                      <ProductForm
-                        product={editingProduct}
-                        onSuccess={handleProductSuccess}
-                        onCancel={() => {
-                          setProductDialogOpen(false);
-                          setEditingProduct(null);
-                        }}
-                      />
-                    </DialogContent>
-                  </Dialog>
+                  <Link href="/admin/products/add">
+                    <Button>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Product
+                    </Button>
+                  </Link>
                 </div>
 
                 {loading ? (
@@ -213,23 +182,15 @@ export default function AdminPage() {
                             </p>
                           </div>
                           <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setEditingProduct(product);
-                                setProductDialogOpen(true);
-                              }}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDeleteProduct(product._id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <Link href={`/admin/products/edit/${product._id}`}>
+                              <Button size="sm" variant="outline">
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </Link>
+                            <DeleteButton
+                              id={product._id}
+                              onDelete={handleDeleteProduct}
+                            />
                           </div>
                         </CardContent>
                       </Card>
@@ -294,13 +255,10 @@ export default function AdminPage() {
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDeleteService(service._id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <DeleteButton
+                              id={service._id}
+                              onDelete={handleDeleteService}
+                            />
                           </div>
                         </CardContent>
                       </Card>
@@ -311,7 +269,6 @@ export default function AdminPage() {
 
               {/* Orders & Bookings Tab */}
               <TabsContent value="orders" className="space-y-6">
-                {/* You can later implement real orders/bookings */}
                 <p className="text-muted-foreground">
                   Orders and bookings will be implemented soon.
                 </p>

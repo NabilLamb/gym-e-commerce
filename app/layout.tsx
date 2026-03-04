@@ -14,7 +14,6 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "FitHub - Gym Equipment & Services",
   description: "Premium gym equipment, supplements, and fitness services",
-  generator: "v0.app",
   viewport: {
     width: "device-width",
     initialScale: 1,

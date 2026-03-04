@@ -46,5 +46,12 @@ export async function middleware(req: NextRequest) {
 
 // 4. Matcher tells Next.js which routes should trigger this middleware
 export const config = {
-  matcher: ["/checkout/:path*", "/profile/:path*", "/services/booking/:path*", "/admin/:path*"],
+  matcher: [
+    "/checkout/:path*", 
+    "/profile/:path*", 
+    "/services/booking/:path*", 
+    "/admin/:path*", 
+    "/api/products/:path*",
+    "/api/services/:path*"
+  ],
 }

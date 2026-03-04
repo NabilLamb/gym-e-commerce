@@ -1,52 +1,130 @@
-"use client"
+"use client";
 
-import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { useCart } from "@/context/CartContext"
-import { useToast } from "@/hooks/use-toast"
+import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { useCart } from "@/context/CartContext";
+import { useToast } from "@/hooks/use-toast";
+import { ShoppingCart, Star } from "lucide-react";
 
 interface Product {
-  _id: string
-  name: string
-  price: number
-  image: string
-  category: string
+  _id: string;
+  name: string;
+  price: number;
+  originalPrice?: number;
+  images: string[];
+  category: string;
+  description?: string;
+  averageRating?: number; // fixed: was "rating"
+  numReviews?: number;    // fixed: was "reviews"
 }
 
 export function ProductCard({ product }: { product: Product }) {
-  const { addItem } = useCart()
-  const { toast } = useToast()
+  const { addItem } = useCart();
+  const { toast } = useToast();
 
-  const handleAddToCart = () => {
+  // Fix: use first image from array
+  const mainImage = product.images?.[0] || "/placeholder.svg";
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    // Prevent card click (Link navigation) when clicking the button
+    e.preventDefault();
+    e.stopPropagation();
+
     addItem({
       id: product._id,
       name: product.name,
       price: product.price,
-      image: product.image,
+      image: mainImage,
       quantity: 1,
-    })
+    });
     toast({
       title: "Added to cart",
       description: `${product.name} has been added to your cart.`,
-    })
-  }
+    });
+  };
+
+          const hasReviews = product.numReviews && product.numReviews > 0;
 
   return (
-    <div className="border rounded-lg p-4 hover:shadow-lg transition">
-      <div className="relative h-48 w-full mb-4">
-        <Image
-          src={product.image || "/placeholder.svg"}
-          alt={product.name}
-          fill
-          className="object-cover rounded"
-        />
+    <Link href={`/products/${product._id}`} className="group block">
+      <div className="border border-border rounded-lg overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-200 bg-card h-full flex flex-col">
+        {/* Image */}
+        <div className="relative h-48 w-full bg-secondary overflow-hidden">
+          <Image
+            src={mainImage}
+            alt={product.name}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+          {product.originalPrice && (
+            <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs font-bold px-2 py-1 rounded">
+              SALE
+            </span>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="p-4 flex flex-col flex-1">
+          <p className="text-xs text-muted-foreground capitalize mb-1">
+            {product.category}
+          </p>
+          <h3 className="font-semibold text-base leading-tight mb-1 line-clamp-2">
+            {product.name}
+          </h3>
+
+          {product.description && (
+            <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+              {product.description}
+            </p>
+          )}
+
+          {/* Rating */}
+          <div className="flex items-center gap-1 mb-3">
+            {hasReviews ? (
+              <>
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      className={`w-3 h-3 ${
+                        star <= Math.round(product.averageRating || 0)
+                          ? "fill-yellow-400 text-yellow-400"
+                          : "fill-muted text-muted"
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {product.averageRating?.toFixed(1)} ({product.numReviews})
+                </span>
+              </>
+            ) : (
+              <span className="text-xs text-muted-foreground italic">
+                No reviews yet
+              </span>
+            )}
+          </div>
+
+          {/* Price + Button */}
+          <div className="mt-auto">
+            <div className="flex items-baseline gap-2 mb-3">
+              <span className="text-xl font-bold text-primary">
+                ${product.price.toFixed(2)}
+              </span>
+              {product.originalPrice && (
+                <span className="text-sm line-through text-muted-foreground">
+                  ${product.originalPrice.toFixed(2)}
+                </span>
+              )}
+            </div>
+            <Button onClick={handleAddToCart} className="w-full" size="sm">
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              Add to Cart
+            </Button>
+          </div>
+        </div>
       </div>
-      <h3 className="font-semibold">{product.name}</h3>
-      <p className="text-sm text-muted-foreground">{product.category}</p>
-      <p className="text-lg font-bold mt-2">${product.price.toFixed(2)}</p>
-      <Button onClick={handleAddToCart} className="w-full mt-4">
-        Add to Cart
-      </Button>
-    </div>
-  )
+    </Link>
+  );
 }
