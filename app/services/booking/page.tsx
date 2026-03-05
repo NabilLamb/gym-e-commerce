@@ -1,107 +1,204 @@
-'use client'
+// app/services/booking/page.tsx
 
-import React from "react"
+"use client";
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
-import { Header } from '@/components/header'
-import { Footer } from '@/components/footer'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { services } from '@/lib/dummy-data'
-import { CheckCircle, ChevronRight } from 'lucide-react'
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import {
+  CheckCircle,
+  ChevronRight,
+  Clock,
+  MapPin,
+  Users,
+  Loader2,
+  QrCode,
+} from "lucide-react";
+
+interface Service {
+  _id: string;
+  name: string;
+  description: string;
+  price: number;
+  duration: string;
+  location: string;
+  capacity: number;
+}
 
 export default function BookingPage() {
-  const searchParams = useSearchParams()
-  const selectedServiceId = searchParams.get('service')
-  const selectedService = services.find((s) => s.id === selectedServiceId) || services[0]
+  const searchParams = useSearchParams();
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  const preselectedId = searchParams.get("service") || "";
+
+  const [services, setServices]         = useState<Service[]>([]);
+  const [loadingServices, setLoadingServices] = useState(true);
+  const [submitting, setSubmitting]     = useState(false);
+  const [confirmedBooking, setConfirmedBooking] = useState<any>(null);
 
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    service: selectedServiceId || services[0].id,
-    date: '',
-    time: '',
-  })
+    serviceId: preselectedId,
+    fullName:  "",
+    email:     "",
+    phone:     "",
+    date:      "",
+    time:      "",
+    notes:     "",
+  });
 
-  const [submitted, setSubmitted] = useState(false)
-  const [bookingId] = useState(`BK-${Math.random().toString(36).substr(2, 9).toUpperCase()}`)
+  useEffect(() => {
+    fetch("/api/services")
+      .then((r) => r.json())
+      .then((data) => {
+        setServices(data);
+        if (!preselectedId && data.length > 0) {
+          setFormData((prev) => ({ ...prev, serviceId: data[0]._id }));
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoadingServices(false));
+  }, [preselectedId]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        fullName: prev.fullName || user.name || "",
+        email:    prev.email    || user.email || "",
+      }));
+    }
+  }, [user]);
 
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+  const selectedService = services.find((s) => s._id === formData.serviceId);
+  const today = new Date().toISOString().split("T")[0];
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setSubmitted(true)
-  }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
-  if (submitted) {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Booking failed");
+      }
+
+      const data = await res.json();
+      setConfirmedBooking(data);
+    } catch (err: any) {
+      toast({ title: "Booking failed", description: err.message, variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ── Confirmation screen ──────────────────────────────────────
+  if (confirmedBooking) {
     return (
       <>
         <Header />
         <main className="min-h-screen bg-background py-12">
-          <div className="container max-w-2xl mx-auto px-4">
-            <div className="text-center mb-12">
-              <div className="flex justify-center mb-6">
-                <CheckCircle className="w-16 h-16 text-primary" />
-              </div>
-              <h1 className="text-4xl font-bold mb-4">Booking Confirmed!</h1>
-              <p className="text-lg text-muted-foreground mb-8">
-                Your service booking has been successfully confirmed. Check your email for more details.
-              </p>
+          <div className="container max-w-2xl mx-auto px-4 text-center">
+            <div className="flex justify-center mb-6">
+              <CheckCircle className="w-16 h-16 text-primary" />
+            </div>
+            <h1 className="text-4xl font-bold mb-3">Booking Received!</h1>
+            <p className="text-muted-foreground mb-8">
+              We'll confirm your booking shortly. Show your check-in code at the front desk.
+            </p>
 
-              <Card className="bg-card border border-border mb-8">
-                <CardContent className="p-6">
-                  <div className="space-y-4 text-left">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Booking ID</p>
-                      <p className="text-2xl font-bold text-primary">{bookingId}</p>
-                    </div>
-                    <div className="border-t border-border pt-4">
-                      <p className="text-sm text-muted-foreground">Service</p>
-                      <p className="font-semibold">{services.find((s) => s.id === formData.service)?.name}</p>
-                    </div>
-                    <div className="border-t border-border pt-4">
-                      <p className="text-sm text-muted-foreground">Scheduled Date & Time</p>
-                      <p className="font-semibold">
-                        {formData.date} at {formData.time}
-                      </p>
-                    </div>
-                    <div className="border-t border-border pt-4">
-                      <p className="text-sm text-muted-foreground">Instructor Name</p>
-                      <p className="font-semibold">{formData.fullName}</p>
-                    </div>
+            <Card className="mb-8 text-left">
+              <CardContent className="p-6 space-y-5">
+                {/* Check-in code */}
+                <div className="flex flex-col items-center bg-primary/5 border border-primary/20 rounded-xl p-5">
+                  <QrCode className="w-8 h-8 text-primary mb-2" />
+                  <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Check-in Code</p>
+                  <p className="text-3xl font-bold tracking-widest text-primary">
+                    {confirmedBooking.checkInCode}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Show this code when you arrive
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Service</p>
+                    <p className="font-semibold">{confirmedBooking.serviceName}</p>
                   </div>
-                </CardContent>
-              </Card>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Status</p>
+                    <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-500/10 text-yellow-500 border border-yellow-500/20">
+                      Pending Confirmation
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Date</p>
+                    <p className="font-semibold">
+                      {new Date(confirmedBooking.date).toLocaleDateString("en-US", {
+                        weekday: "long", year: "numeric", month: "long", day: "numeric",
+                      })}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Time</p>
+                    <p className="font-semibold">{confirmedBooking.time}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Name</p>
+                    <p className="font-semibold">{confirmedBooking.fullName}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Email</p>
+                    <p className="font-semibold text-sm">{confirmedBooking.email}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/services">
-                  <Button variant="outline">View More Services</Button>
-                </Link>
-                <Link href="/profile">
-                  <Button>View My Bookings</Button>
-                </Link>
-              </div>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/services">
+                <Button variant="outline">View More Services</Button>
+              </Link>
+              <Link href="/profile">
+                <Button>View My Bookings</Button>
+              </Link>
             </div>
           </div>
         </main>
         <Footer />
       </>
-    )
+    );
   }
 
+  // ── Booking form ──────────────────────────────────────────────
   return (
     <>
       <Header />
@@ -110,15 +207,11 @@ export default function BookingPage() {
         <div className="border-b border-border bg-card">
           <div className="container max-w-7xl mx-auto px-4 py-4">
             <div className="flex items-center gap-2 text-sm">
-              <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                Home
-              </Link>
+              <Link href="/" className="text-muted-foreground hover:text-foreground">Home</Link>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              <Link href="/services" className="text-muted-foreground hover:text-foreground transition-colors">
-                Services
-              </Link>
+              <Link href="/services" className="text-muted-foreground hover:text-foreground">Services</Link>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              <span className="text-foreground font-medium">Booking</span>
+              <span className="text-foreground font-medium">Book a Session</span>
             </div>
           </div>
         </div>
@@ -129,106 +222,116 @@ export default function BookingPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Booking Information</CardTitle>
+                <CardTitle>Booking Details</CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Service Selection */}
-                  <div>
-                    <Label htmlFor="service">Select Service</Label>
-                    <Select value={formData.service} onValueChange={(v) => handleSelectChange('service', v)}>
-                      <SelectTrigger id="service">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {services.map((service) => (
-                          <SelectItem key={service.id} value={service.id}>
-                            {service.name} - ${service.price}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                {loadingServices ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                   </div>
-
-                  {/* Service Details */}
-                  {services.find((s) => s.id === formData.service) && (
-                    <div className="bg-secondary p-4 rounded-lg">
-                      <p className="text-sm text-muted-foreground">
-                        {services.find((s) => s.id === formData.service)?.description}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Personal Information */}
-                  <div>
-                    <Label htmlFor="fullName">Full Name</Label>
-                    <Input
-                      id="fullName"
-                      name="fullName"
-                      value={formData.fullName}
-                      onChange={handleChange}
-                      required
-                      placeholder="John Doe"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                      placeholder="john@example.com"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      required
-                      placeholder="(555) 123-4567"
-                    />
-                  </div>
-
-                  {/* Date and Time */}
-                  <div className="grid grid-cols-2 gap-4">
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-5">
+                    {/* Service picker */}
                     <div>
-                      <Label htmlFor="date">Preferred Date</Label>
-                      <Input
-                        id="date"
-                        name="date"
-                        type="date"
-                        value={formData.date}
-                        onChange={handleChange}
-                        required
-                      />
+                      <Label>Select Service</Label>
+                      <Select
+                        value={formData.serviceId}
+                        onValueChange={(v) => setFormData((prev) => ({ ...prev, serviceId: v }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose a service..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {services.map((s) => (
+                            <SelectItem key={s._id} value={s._id}>
+                              {s.name} — ${s.price}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Service info card */}
+                    {selectedService && (
+                      <div className="bg-secondary rounded-lg p-4 space-y-2">
+                        <p className="font-medium">{selectedService.name}</p>
+                        <p className="text-sm text-muted-foreground">{selectedService.description}</p>
+                        <div className="flex flex-wrap gap-4 pt-1">
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Clock className="w-3 h-3" /> {selectedService.duration}
+                          </span>
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <MapPin className="w-3 h-3" /> {selectedService.location}
+                          </span>
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Users className="w-3 h-3" />
+                            {selectedService.capacity === 1
+                              ? "1-on-1 session"
+                              : `Up to ${selectedService.capacity} people`}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Personal info */}
+                    <div>
+                      <Label htmlFor="fullName">Full Name</Label>
+                      <Input id="fullName" name="fullName" value={formData.fullName}
+                        onChange={handleChange} placeholder="John Doe" required />
                     </div>
                     <div>
-                      <Label htmlFor="time">Preferred Time</Label>
-                      <Input
-                        id="time"
-                        name="time"
-                        type="time"
-                        value={formData.time}
-                        onChange={handleChange}
-                        required
-                      />
+                      <Label htmlFor="email">Email Address</Label>
+                      <Input id="email" name="email" type="email" value={formData.email}
+                        onChange={handleChange} placeholder="john@example.com" required />
                     </div>
-                  </div>
+                    <div>
+                      <Label htmlFor="phone">Phone Number</Label>
+                      <Input id="phone" name="phone" type="tel" value={formData.phone}
+                        onChange={handleChange} placeholder="+1 (555) 000-0000" required />
+                    </div>
 
-                  {/* Submit */}
-                  <Button type="submit" size="lg" className="w-full">
-                    Confirm Booking
-                  </Button>
-                </form>
+                    {/* Date & time */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="date">Preferred Date</Label>
+                        <Input id="date" name="date" type="date" min={today}
+                          value={formData.date} onChange={handleChange} required />
+                      </div>
+                      <div>
+                        <Label htmlFor="time">Preferred Time</Label>
+                        <Input id="time" name="time" type="time"
+                          value={formData.time} onChange={handleChange} required />
+                      </div>
+                    </div>
+
+                    {/* Notes */}
+                    <div>
+                      <Label htmlFor="notes">
+                        Notes{" "}
+                        <span className="text-muted-foreground font-normal text-sm">(optional)</span>
+                      </Label>
+                      <Textarea id="notes" name="notes" value={formData.notes}
+                        onChange={handleChange} rows={3} className="resize-none"
+                        placeholder="Any injuries, goals, or special requests..." />
+                    </div>
+
+                    {/* Price summary */}
+                    {selectedService && (
+                      <div className="border-t border-border pt-4 flex justify-between items-center">
+                        <span className="text-muted-foreground">Session price</span>
+                        <span className="text-2xl font-bold text-primary">${selectedService.price}</span>
+                      </div>
+                    )}
+
+                    <Button type="submit" size="lg" className="w-full" disabled={submitting}>
+                      {submitting ? (
+                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Confirming...</>
+                      ) : (
+                        "Confirm Booking"
+                      )}
+                    </Button>
+                  </form>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -236,5 +339,5 @@ export default function BookingPage() {
       </main>
       <Footer />
     </>
-  )
+  );
 }

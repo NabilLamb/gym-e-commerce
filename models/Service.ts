@@ -1,22 +1,38 @@
-import mongoose, { Schema, Document, models, model } from "mongoose"
+// models/Service.ts
+
+import mongoose, { Schema, Document, models, model } from "mongoose";
 
 export interface IService extends Document {
-  name: string
-  description: string
-  price: number
-  duration: string
-  image: string
+  name: string;
+  description: string;
+  price: number;
+  duration: string;
+  category: "personal-training" | "group-class" | "facility-access" | "assessment" | "online-coaching";
+  capacity: number;
+  location: string;
+  image: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const ServiceSchema = new Schema<IService>(
   {
-    name: { type: String, required: true },
+    name:        { type: String, required: true, trim: true },
     description: { type: String, required: true },
-    price: { type: Number, required: true },
-    duration: { type: String, required: true },
-    image: { type: String, required: true },
+    price:       { type: Number, required: true, min: 0 },
+    duration:    { type: String, required: true },
+    category: {
+      type: String,
+      enum: ["personal-training", "group-class", "facility-access", "assessment", "online-coaching"],
+      default: "personal-training",
+    },
+    capacity: { type: Number, required: true, min: 1, default: 1 },
+    location: { type: String, required: true, default: "Main Floor" },
+    image:    { type: String, required: true },
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
-)
+);
 
-export default models.Service || model<IService>("Service", ServiceSchema)
+export default models.Service || model<IService>("Service", ServiceSchema);

@@ -1,3 +1,5 @@
+// app/admin/page.tsx
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -8,104 +10,103 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { ServiceForm } from "@/components/admin/ServiceForm";
-import { ChevronRight, Plus, Edit, BarChart3 } from "lucide-react";
 import { DeleteButton } from "@/components/admin/DeleteButton";
+import { ChevronRight, Plus, Edit, BarChart3 } from "lucide-react";
+
+const STATUS_COLORS: Record<string, string> = {
+  pending:   "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+  confirmed: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+  completed: "bg-green-500/10 text-green-500 border-green-500/20",
+  cancelled: "bg-red-500/10 text-red-500 border-red-500/20",
+  "no-show": "bg-gray-500/10 text-gray-400 border-gray-500/20",
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  "personal-training": "Personal Training",
+  "group-class":       "Group Class",
+  "facility-access":   "Facility Access",
+  "assessment":        "Assessment",
+  "online-coaching":   "Online Coaching",
+};
 
 export default function AdminPage() {
   const { toast } = useToast();
-  const [products, setProducts] = useState<any[]>([]);
-  const [services, setServices] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
-  const [editingService, setEditingService] = useState<any>(null);
+  const [products, setProducts]   = useState<any[]>([]);
+  const [services, setServices]   = useState<any[]>([]);
+  const [bookings, setBookings]   = useState<any[]>([]);
+  const [loading, setLoading]     = useState(true);
 
-  // Fetch data
-  const fetchProducts = async () => {
-    const res = await fetch("/api/products");
-    const data = await res.json();
-    setProducts(data);
-  };
-
-  const fetchServices = async () => {
-    const res = await fetch("/api/services");
-    const data = await res.json();
-    setServices(data);
+  const fetchAll = async () => {
+    const [p, s, b] = await Promise.all([
+      fetch("/api/products").then((r) => r.json()),
+      fetch("/api/services").then((r) => r.json()),
+      fetch("/api/bookings", { credentials: "include" }).then((r) => r.ok ? r.json() : []),
+    ]);
+    setProducts(p);
+    setServices(s);
+    setBookings(b);
   };
 
   useEffect(() => {
-    Promise.all([fetchProducts(), fetchServices()]).finally(() =>
-      setLoading(false),
-    );
+    fetchAll().finally(() => setLoading(false));
   }, []);
 
   const handleDeleteProduct = async (id: string) => {
-    try {
-      const res = await fetch(`/api/products/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      if (!res.ok) throw new Error("Failed to delete");
-
-      setProducts(products.filter((p) => p._id !== id));
-      toast({
-        title: "Product deleted",
-        description: "The product has been removed.",
-      });
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to delete product.",
-        variant: "destructive",
-      });
+    const res = await fetch(`/api/products/${id}`, { method: "DELETE", credentials: "include" });
+    if (res.ok) {
+      setProducts((prev) => prev.filter((p) => p._id !== id));
+      toast({ title: "Product deleted" });
     }
   };
 
   const handleDeleteService = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this service?")) return;
-
-    try {
-      const res = await fetch("/api/services", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
-
-      if (!res.ok) throw new Error("Failed to delete");
-
-      setServices(services.filter((s) => s._id !== id));
-      toast({
-        title: "Service deleted",
-        description: "The service has been removed.",
-      });
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to delete service.",
-        variant: "destructive",
-      });
+    const res = await fetch("/api/services", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    if (res.ok) {
+      setServices((prev) => prev.filter((s) => s._id !== id));
+      toast({ title: "Service deleted" });
     }
   };
 
-  const handleServiceSuccess = () => {
-    fetchServices();
-    setServiceDialogOpen(false);
-    setEditingService(null);
+  const handleBookingStatus = async (id: string, status: string) => {
+    const res = await fetch("/api/bookings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ id, status }),
+    });
+    if (res.ok) {
+      setBookings((prev) => prev.map((b) => b._id === id ? { ...b, status } : b));
+      toast({ title: "Status updated" });
+    }
   };
 
-  // Stats
-  const totalRevenue = 1234.56;
-  const totalOrders = 42;
-  const totalBookings = 18;
-  const totalProducts = products.length;
+  const handleDeleteBooking = async (id: string) => {
+    const res = await fetch("/api/bookings", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ id }),
+    });
+    if (res.ok) {
+      setBookings((prev) => prev.filter((b) => b._id !== id));
+      toast({ title: "Booking deleted" });
+    }
+  };
+
+  const activeBookings = bookings.filter((b) =>
+    b.status === "pending" || b.status === "confirmed"
+  ).length;
 
   return (
     <>
@@ -114,16 +115,9 @@ export default function AdminPage() {
         <div className="border-b border-border bg-card">
           <div className="container max-w-7xl mx-auto px-4 py-4">
             <div className="flex items-center gap-2 text-sm">
-              <Link
-                href="/"
-                className="text-muted-foreground hover:text-foreground"
-              >
-                Home
-              </Link>
+              <Link href="/" className="text-muted-foreground hover:text-foreground">Home</Link>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              <span className="text-foreground font-medium">
-                Admin Dashboard
-              </span>
+              <span className="text-foreground font-medium">Admin Dashboard</span>
             </div>
           </div>
         </div>
@@ -132,146 +126,161 @@ export default function AdminPage() {
           <div className="container max-w-7xl mx-auto px-4">
             <h1 className="text-4xl font-bold mb-8">Admin Dashboard</h1>
 
-            {/* Statistics */}
+            {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-              <StatCard
-                title="Total Revenue"
-                value={`$${totalRevenue.toFixed(2)}`}
-              />
-              <StatCard title="Total Orders" value={totalOrders.toString()} />
-              <StatCard
-                title="Total Bookings"
-                value={totalBookings.toString()}
-              />
-              <StatCard
-                title="Total Products"
-                value={totalProducts.toString()}
-              />
+              <StatCard title="Total Revenue"  value="$0.00" />
+              <StatCard title="Total Orders"   value="0" />
+              <StatCard title="Total Bookings" value={bookings.length.toString()} />
+              <StatCard title="Total Products" value={products.length.toString()} />
             </div>
 
             <Tabs defaultValue="products" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="products">Products</TabsTrigger>
                 <TabsTrigger value="services">Services</TabsTrigger>
-                <TabsTrigger value="orders">Orders & Bookings</TabsTrigger>
+                <TabsTrigger value="bookings">
+                  Bookings
+                  {activeBookings > 0 && (
+                    <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full px-1.5 py-0.5">
+                      {activeBookings}
+                    </span>
+                  )}
+                </TabsTrigger>
               </TabsList>
 
-              {/* Products Tab */}
-              <TabsContent value="products" className="space-y-6">
+              {/* ── Products ── */}
+              <TabsContent value="products" className="space-y-4 mt-6">
                 <div className="flex justify-between items-center">
                   <h2 className="text-2xl font-bold">Manage Products</h2>
                   <Link href="/admin/products/add">
-                    <Button>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Product
-                    </Button>
+                    <Button><Plus className="w-4 h-4 mr-2" /> Add Product</Button>
                   </Link>
                 </div>
-
-                {loading ? (
-                  <p>Loading products...</p>
-                ) : (
-                  <div className="space-y-2">
-                    {products.map((product) => (
-                      <Card key={product._id}>
-                        <CardContent className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                          <div>
-                            <p className="font-semibold">{product.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {product.category} - ${product.price}
-                            </p>
-                          </div>
-                          <div className="flex gap-2">
-                            <Link href={`/admin/products/edit/${product._id}`}>
-                              <Button size="sm" variant="outline">
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                            </Link>
-                            <DeleteButton
-                              id={product._id}
-                              onDelete={handleDeleteProduct}
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
+                {loading ? <p className="text-muted-foreground">Loading...</p>
+                  : products.length === 0 ? <p className="text-muted-foreground">No products yet.</p>
+                  : (
+                    <div className="space-y-2">
+                      {products.map((p) => (
+                        <Card key={p._id}>
+                          <CardContent className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div>
+                              <p className="font-semibold">{p.name}</p>
+                              <p className="text-sm text-muted-foreground capitalize">
+                                {p.category} — ${p.price}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Link href={`/admin/products/edit/${p._id}`}>
+                                <Button size="sm" variant="outline"><Edit className="w-4 h-4" /></Button>
+                              </Link>
+                              <DeleteButton id={p._id} onDelete={handleDeleteProduct} />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
               </TabsContent>
 
-              {/* Services Tab */}
-              <TabsContent value="services" className="space-y-6">
+              {/* ── Services ── */}
+              <TabsContent value="services" className="space-y-4 mt-6">
                 <div className="flex justify-between items-center">
                   <h2 className="text-2xl font-bold">Manage Services</h2>
-                  <Dialog
-                    open={serviceDialogOpen}
-                    onOpenChange={setServiceDialogOpen}
-                  >
-                    <DialogTrigger asChild>
-                      <Button onClick={() => setEditingService(null)}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Service
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                      <DialogHeader>
-                        <DialogTitle>
-                          {editingService ? "Edit Service" : "Add New Service"}
-                        </DialogTitle>
-                      </DialogHeader>
-                      <ServiceForm
-                        service={editingService}
-                        onSuccess={handleServiceSuccess}
-                        onCancel={() => {
-                          setServiceDialogOpen(false);
-                          setEditingService(null);
-                        }}
-                      />
-                    </DialogContent>
-                  </Dialog>
+                  <Link href="/admin/services/add">
+                    <Button><Plus className="w-4 h-4 mr-2" /> Add Service</Button>
+                  </Link>
                 </div>
-
-                {loading ? (
-                  <p>Loading services...</p>
-                ) : (
-                  <div className="space-y-2">
-                    {services.map((service) => (
-                      <Card key={service._id}>
-                        <CardContent className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                          <div>
-                            <p className="font-semibold">{service.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              ${service.price} - {service.duration}
-                            </p>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setEditingService(service);
-                                setServiceDialogOpen(true);
-                              }}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <DeleteButton
-                              id={service._id}
-                              onDelete={handleDeleteService}
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
+                {loading ? <p className="text-muted-foreground">Loading...</p>
+                  : services.length === 0 ? <p className="text-muted-foreground">No services yet.</p>
+                  : (
+                    <div className="space-y-2">
+                      {services.map((s) => (
+                        <Card key={s._id}>
+                          <CardContent className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div>
+                              <p className="font-semibold">{s.name}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {CATEGORY_LABELS[s.category] || s.category} —{" "}
+                                ${s.price} · {s.duration} · {s.location}
+                              </p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Link href={`/admin/services/edit/${s._id}`}>
+                                <Button size="sm" variant="outline"><Edit className="w-4 h-4" /></Button>
+                              </Link>
+                              <DeleteButton id={s._id} onDelete={handleDeleteService} />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
               </TabsContent>
 
-              {/* Orders & Bookings Tab */}
-              <TabsContent value="orders" className="space-y-6">
-                <p className="text-muted-foreground">
-                  Orders and bookings will be implemented soon.
-                </p>
+              {/* ── Bookings ── */}
+              <TabsContent value="bookings" className="space-y-4 mt-6">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-2xl font-bold">Manage Bookings</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {bookings.length} total · {activeBookings} active
+                  </p>
+                </div>
+                {loading ? <p className="text-muted-foreground">Loading...</p>
+                  : bookings.length === 0 ? <p className="text-muted-foreground">No bookings yet.</p>
+                  : (
+                    <div className="space-y-2">
+                      {bookings.map((b) => (
+                        <Card key={b._id}>
+                          <CardContent className="p-4 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <p className="font-semibold">{b.fullName}</p>
+                                <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${STATUS_COLORS[b.status] || ""}`}>
+                                  {b.status}
+                                </span>
+                                <span className="text-xs font-mono bg-secondary px-2 py-0.5 rounded">
+                                  {b.checkInCode}
+                                </span>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {b.serviceName} —{" "}
+                                {new Date(b.date).toLocaleDateString("en-US", {
+                                  weekday: "short", month: "short", day: "numeric",
+                                })}{" "}
+                                at {b.time}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {b.email} · {b.phone}
+                              </p>
+                              {b.notes && (
+                                <p className="text-xs text-muted-foreground italic mt-1">
+                                  "{b.notes}"
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <Select
+                                value={b.status}
+                                onValueChange={(v) => handleBookingStatus(b._id, v)}
+                              >
+                                <SelectTrigger className="w-36 h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="pending">Pending</SelectItem>
+                                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                                  <SelectItem value="completed">Completed</SelectItem>
+                                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                                  <SelectItem value="no-show">No-show</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <DeleteButton id={b._id} onDelete={handleDeleteBooking} />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
               </TabsContent>
             </Tabs>
           </div>
