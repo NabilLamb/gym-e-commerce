@@ -1,12 +1,14 @@
-//components\footer.tsx
+"use client"
 
 import Link from 'next/link'
-import { Facebook, Instagram, Twitter, Linkedin, ArrowRight } from 'lucide-react'
+import { Facebook, Instagram, Twitter, ArrowRight } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
 
 export function Footer() {
+  const { user } = useAuth()
+
   return (
     <footer className="border-t-2 border-[#FF531A] bg-zinc-950 text-zinc-400 py-16 relative overflow-hidden">
-      {/* Subtle Glow Background Effect */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[200px] bg-[#FF531A]/5 blur-[120px] -z-10 rounded-full" />
       
       <div className="container max-w-7xl mx-auto px-4">
@@ -17,9 +19,9 @@ export function Footer() {
             <p className="text-zinc-400">Subscribe for early access to drops, exclusive deals, and elite training tips.</p>
           </div>
           <div className="flex w-full md:w-auto gap-3">
-            <input 
-              type="email" 
-              placeholder="Enter your email" 
+            <input
+              type="email"
+              placeholder="Enter your email"
               className="bg-zinc-950 border border-zinc-800 text-white px-4 py-3 rounded-lg focus:outline-none focus:border-[#FF531A] transition-colors w-full md:w-80"
             />
             <button className="bg-[#FF531A] text-white px-6 py-3 rounded-lg font-bold hover:bg-[#FF531A]/90 transition-colors cursor-pointer flex items-center gap-2 flex-shrink-0">
@@ -28,29 +30,20 @@ export function Footer() {
           </div>
         </div>
 
-        {/* 4-Column Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-12 mb-16">
           {/* Col 1 - Brand */}
           <div className="space-y-6">
             <Link href="/" className="flex items-center gap-2 font-bold text-2xl text-white cursor-pointer w-fit">
-              <div className="w-8 h-8 bg-[#FF531A] rounded-lg flex items-center justify-center text-white text-sm font-bold">
-                F
-              </div>
+              <div className="w-8 h-8 bg-[#FF531A] rounded-lg flex items-center justify-center text-white text-sm font-bold">F</div>
               <span className="tracking-tight">FitHub</span>
             </Link>
-            <p className="text-zinc-400 font-medium leading-relaxed">
-              Train harder. Live stronger.
-            </p>
+            <p className="text-zinc-400 font-medium leading-relaxed">Train harder. Live stronger.</p>
             <div className="flex gap-4 pt-2">
-              <Link href="#" className="w-10 h-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:bg-[#FF531A] hover:border-[#FF531A] hover:text-white transition-all duration-300 cursor-pointer">
-                <Instagram className="w-4 h-4" />
-              </Link>
-              <Link href="#" className="w-10 h-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:bg-[#FF531A] hover:border-[#FF531A] hover:text-white transition-all duration-300 cursor-pointer">
-                <Twitter className="w-4 h-4" />
-              </Link>
-              <Link href="#" className="w-10 h-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:bg-[#FF531A] hover:border-[#FF531A] hover:text-white transition-all duration-300 cursor-pointer">
-                <Facebook className="w-4 h-4" />
-              </Link>
+              {[Instagram, Twitter, Facebook].map((Icon, i) => (
+                <Link key={i} href="#" className="w-10 h-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:bg-[#FF531A] hover:border-[#FF531A] hover:text-white transition-all duration-300 cursor-pointer">
+                  <Icon className="w-4 h-4" />
+                </Link>
+              ))}
             </div>
           </div>
 
@@ -58,21 +51,19 @@ export function Footer() {
           <div className="space-y-6">
             <h4 className="text-white font-bold text-lg tracking-wide uppercase">Shop</h4>
             <ul className="space-y-4 text-sm font-medium">
-              <li>
-                <Link href="/products" className="hover:text-[#FF531A] transition-colors cursor-pointer block">All Products</Link>
-              </li>
-              <li>
-                <Link href="/products?category=equipment" className="hover:text-[#FF531A] transition-colors cursor-pointer block">Equipment</Link>
-              </li>
-              <li>
-                <Link href="/products?category=supplements" className="hover:text-[#FF531A] transition-colors cursor-pointer block">Supplements</Link>
-              </li>
-              <li>
-                <Link href="/products?category=clothes" className="hover:text-[#FF531A] transition-colors cursor-pointer block">Clothes</Link>
-              </li>
-              <li>
-                <Link href="/cart" className="hover:text-[#FF531A] transition-colors cursor-pointer block">Shopping Cart</Link>
-              </li>
+              {[
+                { label: "All Products", href: "/products" },
+                { label: "Equipment", href: "/products?category=equipment" },
+                { label: "Supplements", href: "/products?category=supplements" },
+                { label: "Clothes", href: "/products?category=clothes" },
+                { label: "Shopping Cart", href: "/cart" },
+              ].map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className="hover:text-[#FF531A] transition-colors cursor-pointer block">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -80,15 +71,17 @@ export function Footer() {
           <div className="space-y-6">
             <h4 className="text-white font-bold text-lg tracking-wide uppercase">Services</h4>
             <ul className="space-y-4 text-sm font-medium">
-              <li>
-                <Link href="/services" className="hover:text-[#FF531A] transition-colors cursor-pointer block">All Services</Link>
-              </li>
-              <li>
-                <Link href="/services" className="hover:text-[#FF531A] transition-colors cursor-pointer block">Bookings</Link>
-              </li>
-              <li>
-                <Link href="/services" className="hover:text-[#FF531A] transition-colors cursor-pointer block">Schedule</Link>
-              </li>
+              {[
+                { label: "All Services", href: "/services" },
+                { label: "Book a Session", href: "/services/booking" },
+                { label: "Contact Us", href: "/contact" },
+              ].map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className="hover:text-[#FF531A] transition-colors cursor-pointer block">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -97,13 +90,22 @@ export function Footer() {
             <h4 className="text-white font-bold text-lg tracking-wide uppercase">Account</h4>
             <ul className="space-y-4 text-sm font-medium">
               <li>
-                <Link href="/profile" className="hover:text-[#FF531A] transition-colors cursor-pointer block">My Profile</Link>
+                <Link href="/profile" className="hover:text-[#FF531A] transition-colors cursor-pointer block">
+                  My Profile
+                </Link>
               </li>
+              {/* Only show Dashboard link to admins */}
+              {user?.role === "admin" && (
+                <li>
+                  <Link href="/admin" className="hover:text-[#FF531A] transition-colors cursor-pointer block">
+                    Dashboard
+                  </Link>
+                </li>
+              )}
               <li>
-                <Link href="/admin" className="hover:text-[#FF531A] transition-colors cursor-pointer block">Dashboard</Link>
-              </li>
-              <li>
-                <Link href="/auth?mode=login" className="hover:text-[#FF531A] transition-colors cursor-pointer block">Login / Register</Link>
+                <Link href="/auth?mode=login" className="hover:text-[#FF531A] transition-colors cursor-pointer block">
+                  Login / Register
+                </Link>
               </li>
             </ul>
           </div>
@@ -124,4 +126,3 @@ export function Footer() {
     </footer>
   )
 }
-

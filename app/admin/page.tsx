@@ -1,4 +1,4 @@
-// app/admin/page.tsx
+//app/admin/page.tsx
 
 "use client";
 
@@ -17,7 +17,21 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { DeleteButton } from "@/components/admin/DeleteButton";
 import { AdminListRow } from "@/components/admin/AdminListRow";
-import { ChevronRight, Plus, Edit, BarChart3, ShoppingBag, Eye, ToggleLeft, ToggleRight } from "lucide-react";
+import {
+  ChevronRight, Plus, Edit, BarChart3, ShoppingBag, Eye, ToggleLeft, ToggleRight,
+  Mail, MailOpen, MailCheck, // ← added for messages
+} from "lucide-react";
+
+// ===== INTERFACES =====
+interface IMessage {
+  _id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}
 
 const BOOKING_STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
@@ -60,19 +74,22 @@ function AdminDashboardContent() {
   const [services, setServices] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [messages, setMessages] = useState<IMessage[]>([]); // ← new state
   const [loading, setLoading] = useState(true);
 
   const fetchAll = async () => {
-    const [p, s, b, o] = await Promise.all([
-      fetch("/api/products?all=true", { credentials: "include" }).then((r) => r.json()), // ← fixed
+    const [p, s, b, o, m] = await Promise.all([
+      fetch("/api/products?all=true", { credentials: "include" }).then((r) => r.json()),
       fetch("/api/services?all=true", { credentials: "include" }).then((r) => r.json()),
       fetch("/api/bookings", { credentials: "include" }).then((r) => r.ok ? r.json() : []),
       fetch("/api/orders", { credentials: "include" }).then((r) => r.ok ? r.json() : []),
+      fetch("/api/messages", { credentials: "include" }).then((r) => r.ok ? r.json() : []),
     ]);
     setProducts(Array.isArray(p) ? p : []);
     setServices(Array.isArray(s) ? s : []);
     setBookings(Array.isArray(b) ? b : []);
     setOrders(Array.isArray(o) ? o : []);
+    setMessages(Array.isArray(m) ? m : []);
   };
 
   useEffect(() => { fetchAll().finally(() => setLoading(false)); }, []);
@@ -108,7 +125,6 @@ function AdminDashboardContent() {
     }
   };
 
-  // Quick toggle isActive without going to edit page
   const handleToggleService = async (s: any) => {
     const res = await fetch("/api/services", {
       method: "PUT",
@@ -158,12 +174,41 @@ function AdminDashboardContent() {
     if (res.ok) { setOrders((o) => o.filter((x) => x._id !== id)); toast({ title: "Order deleted" }); }
   };
 
+  // ===== MESSAGE HANDLERS =====
+  const handleMarkRead = async (msg: IMessage) => {
+    const res = await fetch("/api/messages", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ id: msg._id, isRead: !msg.isRead }),
+    });
+    if (res.ok) {
+      setMessages((prev) =>
+        prev.map((m) => m._id === msg._id ? { ...m, isRead: !msg.isRead } : m)
+      );
+    }
+  };
+
+  const handleDeleteMessage = async (id: string) => {
+    const res = await fetch("/api/messages", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ id }),
+    });
+    if (res.ok) {
+      setMessages((prev) => prev.filter((m) => m._id !== id));
+      toast({ title: "Message deleted." });
+    }
+  };
+
   // ── Stats ──────────────────────────────────────────────────────
   const activeBookings = bookings.filter((b) => ["pending", "confirmed"].includes(b.status)).length;
   const activeOrders = orders.filter((o) => ["pending", "processing", "shipped"].includes(o.status)).length;
   const totalRevenue = orders
     .filter((o) => o.status !== "cancelled")
     .reduce((sum, o) => sum + (o.total || 0), 0);
+  const unreadMessages = messages.filter((m) => !m.isRead).length; // ← new
 
   return (
     <>
@@ -184,9 +229,8 @@ function AdminDashboardContent() {
           <div className="container max-w-7xl mx-auto px-4">
             <h1 className="text-5xl md:text-6xl font-extrabold mb-10 tracking-tight">Admin <span className="text-red-500">Dashboard</span></h1>
 
-            {/* Stats */}
-            {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+            {/* Stats – now 5 cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-16">
               <StatCard
                 title="Total Revenue"
                 value={`$${totalRevenue.toFixed(2)}`}
@@ -207,10 +251,15 @@ function AdminDashboardContent() {
                 value={products.length.toString()}
                 loading={loading}
               />
+              <StatCard
+                title="Unread Messages"
+                value={unreadMessages.toString()}
+                loading={loading}
+              />
             </div>
 
             <Tabs defaultValue={defaultTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="products">Products</TabsTrigger>
                 <TabsTrigger value="services">Services</TabsTrigger>
                 <TabsTrigger value="orders">
@@ -226,6 +275,14 @@ function AdminDashboardContent() {
                   {activeBookings > 0 && (
                     <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full px-1.5 py-0.5">
                       {activeBookings}
+                    </span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="messages">
+                  Messages
+                  {unreadMessages > 0 && (
+                    <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full px-1.5 py-0.5">
+                      {unreadMessages}
                     </span>
                   )}
                 </TabsTrigger>
@@ -442,6 +499,117 @@ function AdminDashboardContent() {
                         ))}
                       </div>
                     )}
+              </TabsContent>
+
+              {/* ── Messages ── */}
+              <TabsContent value="messages" className="space-y-4 mt-6">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-2xl font-bold">Contact Messages</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {messages.length} total · {unreadMessages} unread
+                  </p>
+                </div>
+
+                {loading ? (
+                  <div className="space-y-4">
+                    {[...Array(4)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="h-24 rounded-xl bg-card/50 border border-border/50 animate-pulse"
+                      />
+                    ))}
+                  </div>
+                ) : messages.length === 0 ? (
+                  <div className="text-center py-16 border border-dashed border-border rounded-xl">
+                    <Mail className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                    <p className="font-semibold">No messages yet.</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Messages from the contact form will appear here.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {messages.map((msg) => (
+                      <Card
+                        key={msg._id}
+                        className={`border-border/50 overflow-hidden transition-colors ${
+                          !msg.isRead
+                            ? "border-primary/30 bg-primary/5"
+                            : "athletic-card"
+                        }`}
+                      >
+                        <CardContent className="p-5">
+                          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                            {/* Message content */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <p className="font-bold text-base">{msg.name}</p>
+                                {!msg.isRead && (
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold">
+                                    New
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                {msg.email} ·{" "}
+                                {new Date(msg.createdAt).toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </p>
+                              <p className="text-sm font-semibold mb-2">
+                                Subject: {msg.subject}
+                              </p>
+                              <p className="text-sm text-muted-foreground leading-relaxed">
+                                {msg.message}
+                              </p>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex gap-2 flex-shrink-0">
+                              {/* Reply via email */}
+                              <a href={`mailto:${msg.email}?subject=Re: ${msg.subject}`}>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  title="Reply via email"
+                                  className="cursor-pointer"
+                                >
+                                  <Mail className="w-4 h-4" />
+                                </Button>
+                              </a>
+
+                              {/* Mark read/unread */}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                title={msg.isRead ? "Mark as unread" : "Mark as read"}
+                                onClick={() => handleMarkRead(msg)}
+                                className={`cursor-pointer ${
+                                  msg.isRead
+                                    ? "text-muted-foreground"
+                                    : "text-primary border-primary/30 hover:bg-primary/10"
+                                }`}
+                              >
+                                {msg.isRead ? (
+                                  <MailOpen className="w-4 h-4" />
+                                ) : (
+                                  <MailCheck className="w-4 h-4" />
+                                )}
+                              </Button>
+
+                              {/* Delete */}
+                              <DeleteButton id={msg._id} onDelete={handleDeleteMessage} />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </div>

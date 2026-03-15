@@ -1,5 +1,4 @@
 //components\header.tsx
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -16,14 +15,14 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/context/AuthContext"
-import { useCart } from "@/context/CartContext"   // import useCart
+import { useCart } from "@/context/CartContext"
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const { user, loading, logout } = useAuth()
-  const { totalItems } = useCart()   // get totalItems from cart
+  const { totalItems } = useCart()
   const pathname = usePathname()
   const [isScrolled, setIsScrolled] = useState(false)
 
@@ -54,6 +53,8 @@ export function Header() {
           <Link href="/" className={`text-sm font-semibold transition-colors cursor-pointer ${pathname === "/" ? "text-primary underline underline-offset-4" : "text-muted-foreground hover:text-foreground"}`}>Home</Link>
           <Link href="/products" className={`text-sm font-semibold transition-colors cursor-pointer ${pathname === "/products" ? "text-primary underline underline-offset-4" : "text-muted-foreground hover:text-foreground"}`}>Products</Link>
           <Link href="/services" className={`text-sm font-semibold transition-colors cursor-pointer ${pathname === "/services" ? "text-primary underline underline-offset-4" : "text-muted-foreground hover:text-foreground"}`}>Services</Link>
+          {/* Added Contact Link */}
+          <Link href="/contact" className={`text-sm font-semibold transition-colors cursor-pointer ${pathname === "/contact" ? "text-primary underline underline-offset-4" : "text-muted-foreground hover:text-foreground"}`}>Contact</Link>
         </nav>
 
         {/* Right Side */}
@@ -123,19 +124,22 @@ export function Header() {
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-border bg-background shadow-lg">
           <nav className="flex flex-col">
-            <Link href="/" className={`px-4 py-3 text-sm font-medium border-b border-border/50 ${pathname === "/" ? "text-primary" : ""}`}>Home</Link>
-            <Link href="/products" className={`px-4 py-3 text-sm font-medium border-b border-border/50 ${pathname === "/products" ? "text-primary" : ""}`}>Products</Link>
-            <Link href="/services" className={`px-4 py-3 text-sm font-medium border-b border-border/50 ${pathname === "/services" ? "text-primary" : ""}`}>Services</Link>
+            <Link href="/" className={`px-4 py-3 text-sm font-medium border-b border-border/50 ${pathname === "/" ? "text-primary" : ""}`} onClick={() => setMobileMenuOpen(false)}>Home</Link>
+            <Link href="/products" className={`px-4 py-3 text-sm font-medium border-b border-border/50 ${pathname === "/products" ? "text-primary" : ""}`} onClick={() => setMobileMenuOpen(false)}>Products</Link>
+            <Link href="/services" className={`px-4 py-3 text-sm font-medium border-b border-border/50 ${pathname === "/services" ? "text-primary" : ""}`} onClick={() => setMobileMenuOpen(false)}>Services</Link>
+            {/* Added Contact Link to Mobile Menu */}
+            <Link href="/contact" className={`px-4 py-3 text-sm font-medium border-b border-border/50 ${pathname === "/contact" ? "text-primary" : ""}`} onClick={() => setMobileMenuOpen(false)}>Contact</Link>
+            
             {user ? (
               <>
-                {user.role === "admin" && <Link href="/admin" className={`px-4 py-3 text-sm font-medium border-b border-border/50 ${pathname === "/admin" ? "text-primary" : ""}`}>Dashboard</Link>}
-                <Link href="/profile" className={`px-4 py-3 text-sm font-medium border-b border-border/50 ${pathname === "/profile" ? "text-primary" : ""}`}>Profile</Link>
-                <button onClick={handleLogout} className="px-4 py-3 text-sm font-medium text-red-500 text-left border-b border-border/50">Logout</button>
+                {user.role === "admin" && <Link href="/admin" className={`px-4 py-3 text-sm font-medium border-b border-border/50 ${pathname === "/admin" ? "text-primary" : ""}`} onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>}
+                <Link href="/profile" className={`px-4 py-3 text-sm font-medium border-b border-border/50 ${pathname === "/profile" ? "text-primary" : ""}`} onClick={() => setMobileMenuOpen(false)}>Profile</Link>
+                <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }} className="px-4 py-3 text-sm font-medium text-red-500 text-left border-b border-border/50">Logout</button>
               </>
             ) : (
               <>
-                <Link href="/auth?mode=login" className="px-4 py-3 text-sm font-medium border-b border-border/50">Sign In</Link>
-                <Link href="/auth?mode=register" className="px-4 py-3 text-sm font-medium">Sign Up</Link>
+                <Link href="/auth?mode=login" className="px-4 py-3 text-sm font-medium border-b border-border/50" onClick={() => setMobileMenuOpen(false)}>Sign In</Link>
+                <Link href="/auth?mode=register" className="px-4 py-3 text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>Sign Up</Link>
               </>
             )}
           </nav>
