@@ -1,10 +1,9 @@
-// app/api/bookings/route.ts
-
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Booking from "@/models/Booking";
 import Service from "@/models/Service";
 import { getCurrentUser } from "@/lib/getCurrentUser";
+import { validateName, validateEmail, validatePhone } from "@/lib/validations";
 
 // GET — admin: all bookings | user: their own bookings
 export async function GET(req: Request) {
@@ -29,13 +28,45 @@ export async function POST(req: Request) {
 
   const { serviceId, fullName, email, phone, date, time, notes } = await req.json();
 
-  if (!serviceId || !fullName || !email || !phone || !date || !time) {
+  // 1. Validate required fields & formats
+  if (!serviceId) {
+    return NextResponse.json({ message: "Please select a service." }, { status: 400 });
+  }
+
+  const nameError = validateName(fullName);
+  if (nameError) return NextResponse.json({ message: nameError }, { status: 400 });
+
+  const emailError = validateEmail(email);
+  if (emailError) return NextResponse.json({ message: emailError }, { status: 400 });
+
+  const phoneError = validatePhone(phone);
+  if (phoneError) return NextResponse.json({ message: phoneError }, { status: 400 });
+
+  if (!date) {
+    return NextResponse.json({ message: "Please select a date." }, { status: 400 });
+  }
+
+  // 2. Prevent booking in the past
+  const bookingDate = new Date(date);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (bookingDate < today) {
     return NextResponse.json(
-      { message: "All required fields must be filled." },
+      { message: "Booking date cannot be in the past." },
       { status: 400 }
     );
   }
 
+  if (!time) {
+    return NextResponse.json({ message: "Please select a time." }, { status: 400 });
+  }
+
+  // 3. Sanitize notes — strip any HTML and limit length
+  const sanitizedNotes = notes
+    ? notes.trim().replace(/<[^>]*>/g, "").slice(0, 500)
+    : undefined;
+
+  // 4. Verify Service exists
   const service = await Service.findById(serviceId);
   if (!service) {
     return NextResponse.json({ message: "Service not found." }, { status: 404 });
@@ -43,16 +74,17 @@ export async function POST(req: Request) {
 
   const currentUser = await getCurrentUser();
 
+  // 5. Create Booking
   const booking = await Booking.create({
     service:     serviceId,
     serviceName: service.name,
     user:        currentUser?._id || undefined,
     fullName:    fullName.trim(),
-    email:       email.trim(),
+    email:       email.trim().toLowerCase(), // Normalized for consistency
     phone:       phone.trim(),
-    date:        new Date(date),
+    date:        bookingDate,
     time,
-    notes:       notes?.trim() || undefined,
+    notes:       sanitizedNotes,
     status:      "pending",
   });
 

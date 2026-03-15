@@ -1,5 +1,3 @@
-//app\checkout\page.tsx
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -24,7 +22,11 @@ import {
   Package,
   ShoppingBag,
   Truck,
+  Sparkles,
 } from "lucide-react";
+
+// ===== IMPORT VALIDATION HELPERS =====
+import { validateName, VALIDATION } from "@/lib/validations";
 
 // ── Mock processing steps shown during "payment" ──────────────
 const PROCESSING_STEPS = [
@@ -114,8 +116,62 @@ export default function CheckoutPage() {
       }, 700);
     });
 
+  // ===== NEW VALIDATION FUNCTION =====
+  const validateCheckoutForm = (): string | null => {
+    const nameErr = validateName(formData.fullName);
+    if (nameErr) return nameErr;
+
+    if (!formData.address.trim() || formData.address.trim().length < 5)
+      return "Please enter a valid street address.";
+
+    if (!formData.city.trim() || formData.city.trim().length < 2)
+      return "Please enter a valid city.";
+
+    if (!VALIDATION.zip.regex.test(formData.zip))
+      return VALIDATION.zip.message;
+
+    if (!formData.country.trim() || formData.country.trim().length < 2)
+      return "Please enter a valid country.";
+
+    // Card number: 16 digits (spaces allowed)
+    const cardDigits = formData.cardNumber.replace(/\s/g, "");
+    if (!/^\d{16}$/.test(cardDigits))
+      return "Please enter a valid 16-digit card number.";
+
+    // Expiry MM/YY
+    if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(formData.expiry))
+      return "Please enter a valid expiry date (MM/YY).";
+
+    // Check expiry not in past
+    const [month, year] = formData.expiry.split("/");
+    const expiry = new Date(2000 + parseInt(year), parseInt(month) - 1);
+    if (expiry < new Date()) return "Your card has expired.";
+
+    // CVC: 3 digits
+    if (!/^\d{3}$/.test(formData.cvc))
+      return "Please enter a valid 3-digit CVC.";
+
+    if (!formData.cardName.trim() || formData.cardName.trim().length < 2)
+      return "Please enter the name on your card.";
+
+    return null;
+  };
+
+  // ===== UPDATED HANDLE SUBMIT =====
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Run validation first
+    const validationError = validateCheckoutForm();
+    if (validationError) {
+      toast({
+        title: "Invalid form",
+        description: validationError,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setStep("processing");
 
     const orderData = {
@@ -179,40 +235,45 @@ export default function CheckoutPage() {
         <main className="min-h-screen bg-background relative flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-background -z-20" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40%] h-[40%] rounded-full bg-primary/20 blur-[120px] opacity-70 animate-pulse pointer-events-none -z-10" />
-          
+
           <div className="text-center w-full max-w-sm mx-auto">
-            <Card className="athletic-card p-12 border-border/50 text-center shadow-2xl">
-              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-8 relative">
-                <div className="absolute inset-0 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-                <Loader2 className="w-8 h-8 text-primary animate-spin" />
-              </div>
-              <h2 className="text-3xl font-extrabold mb-3 tracking-tight text-balance">Processing Order</h2>
-              <p className="text-muted-foreground mb-10 text-lg font-medium">
-                Please do not close this page.
-              </p>
-              <div className="space-y-4 text-left">
-                {PROCESSING_STEPS.map((s, i) => (
-                  <div
-                    key={i}
-                    className={`flex items-center gap-4 text-base transition-all duration-300 ${
-                      i < processingStep
-                        ? "text-primary"
-                        : i === processingStep
+            <Card className="overflow-hidden border-0 shadow-2xl bg-card/80 backdrop-blur-sm">
+              <div className="h-2 bg-gradient-to-r from-primary to-primary/60" />
+              <CardContent className="p-12">
+                <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-8 relative">
+                  <div className="absolute inset-0 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+                  <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                </div>
+                <h2 className="text-3xl font-extrabold mb-3 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                  Processing Order
+                </h2>
+                <p className="text-muted-foreground mb-10 text-lg font-medium">
+                  Please do not close this page.
+                </p>
+                <div className="space-y-4 text-left">
+                  {PROCESSING_STEPS.map((s, i) => (
+                    <div
+                      key={i}
+                      className={`flex items-center gap-4 text-base transition-all duration-300 ${
+                        i < processingStep
+                          ? "text-primary"
+                          : i === processingStep
                           ? "text-foreground font-semibold"
                           : "text-muted-foreground/40"
-                    }`}
-                  >
-                    {i < processingStep ? (
-                      <CheckCircle className="w-5 h-5 flex-shrink-0" />
-                    ) : i === processingStep ? (
-                      <Loader2 className="w-5 h-5 flex-shrink-0 animate-spin text-primary" />
-                    ) : (
-                      <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/20 flex-shrink-0" />
-                    )}
-                    {s}
-                  </div>
-                ))}
-              </div>
+                      }`}
+                    >
+                      {i < processingStep ? (
+                        <CheckCircle className="w-5 h-5 flex-shrink-0" />
+                      ) : i === processingStep ? (
+                        <Loader2 className="w-5 h-5 flex-shrink-0 animate-spin text-primary" />
+                      ) : (
+                        <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/20 flex-shrink-0" />
+                      )}
+                      {s}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
             </Card>
           </div>
         </main>
@@ -228,23 +289,30 @@ export default function CheckoutPage() {
         <Header />
         <main className="min-h-screen relative pb-24">
           <div className="absolute top-0 right-0 w-full h-[600px] bg-gradient-to-b from-primary/10 via-background to-background -z-10" />
-          
+
           <div className="container max-w-2xl mx-auto px-4 py-16 text-center">
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-6">
+              <Sparkles className="w-4 h-4" />
+              <span>Order confirmed!</span>
+            </div>
             <div className="flex justify-center mb-8">
               <div className="relative">
                 <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full translate-y-2 scale-90" />
                 <CheckCircle className="w-24 h-24 text-primary relative z-10 animate-in zoom-in duration-500" />
               </div>
             </div>
-            <h1 className="text-5xl font-extrabold mb-4 tracking-tight text-balance">Order <span className="text-primary">Confirmed!</span></h1>
+            <h1 className="text-5xl font-extrabold mb-4 tracking-tight text-balance">
+              Order <span className="text-primary">Confirmed!</span>
+            </h1>
             <p className="text-xl text-muted-foreground mb-10 font-medium max-w-md mx-auto">
-              Your premium athletic gear is being prepared. We'll send you a tracking link shortly.
+              Your premium athletic gear is being prepared. We&apos;ll send you a tracking link shortly.
             </p>
 
-            <Card className="athletic-card mb-10 text-left border-primary/20 shadow-xl shadow-primary/5">
+            <Card className="overflow-hidden border-0 shadow-xl mb-10 text-left">
+              <div className="h-2 bg-gradient-to-r from-primary to-primary/60" />
               <CardContent className="p-8 space-y-8">
                 {/* Order number */}
-                <div className="flex flex-col items-center bg-card/60 border border-primary/20 rounded-2xl p-6 shadow-inner relative overflow-hidden">
+                <div className="flex flex-col items-center bg-secondary/30 rounded-2xl p-6 relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent pointer-events-none" />
                   <Package className="w-8 h-8 text-primary mb-3 relative z-10" />
                   <p className="text-sm text-muted-foreground uppercase tracking-[0.2em] font-bold mb-1 relative z-10">
@@ -262,7 +330,10 @@ export default function CheckoutPage() {
                   </p>
                   <div className="space-y-4">
                     {confirmedOrder.items.map((item: any, i: number) => (
-                      <div key={i} className="flex items-center gap-4 bg-secondary/30 p-3 rounded-xl border border-border/50">
+                      <div
+                        key={i}
+                        className="flex items-center gap-4 bg-secondary/30 p-3 rounded-xl border border-border/50"
+                      >
                         <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-background border border-border flex-shrink-0 shadow-sm">
                           {item.image ? (
                             <Image
@@ -298,14 +369,16 @@ export default function CheckoutPage() {
                   <div className="flex justify-between text-base text-muted-foreground font-medium pb-3 border-b border-border/50">
                     <span>Shipping</span>
                     <span className="text-foreground">
-                      {shipping === 0 ? <span className="text-green-500">Free</span> : `$${shipping.toFixed(2)}`}
+                      {shipping === 0 ? (
+                        <span className="text-green-500">Free</span>
+                      ) : (
+                        `$${shipping.toFixed(2)}`
+                      )}
                     </span>
                   </div>
                   <div className="flex justify-between font-extrabold text-2xl pt-2">
                     <span>Total</span>
-                    <span className="text-primary">
-                      ${confirmedOrder.total.toFixed(2)}
-                    </span>
+                    <span className="text-primary">${confirmedOrder.total.toFixed(2)}</span>
                   </div>
                 </div>
 
@@ -316,9 +389,14 @@ export default function CheckoutPage() {
                   </p>
                   <div className="flex items-start gap-3">
                     <p className="text-base font-medium leading-relaxed">
-                      <span className="block font-bold text-lg mb-1">{confirmedOrder.shippingAddress.fullName}</span>
-                      {confirmedOrder.shippingAddress.address}<br/>
-                      {confirmedOrder.shippingAddress.city}, {confirmedOrder.shippingAddress.zip}<br/>
+                      <span className="block font-bold text-lg mb-1">
+                        {confirmedOrder.shippingAddress.fullName}
+                      </span>
+                      {confirmedOrder.shippingAddress.address}
+                      <br />
+                      {confirmedOrder.shippingAddress.city},{" "}
+                      {confirmedOrder.shippingAddress.zip}
+                      <br />
                       {confirmedOrder.shippingAddress.country}
                     </p>
                   </div>
@@ -327,11 +405,21 @@ export default function CheckoutPage() {
             </Card>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/products" className="w-full sm:w-auto">
-                <Button variant="outline" size="lg" className="w-full h-14 rounded-full text-lg border-2">Continue Shopping</Button>
+              <Link href="/products" passHref>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="group w-full sm:w-auto border-primary/20 hover:bg-primary/5"
+                >
+                  Continue Shopping
+                  <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
               </Link>
-              <Link href="/profile" className="w-full sm:w-auto">
-                <Button size="lg" className="w-full h-14 rounded-full text-lg shadow-lg">View My Orders</Button>
+              <Link href="/profile" passHref>
+                <Button size="lg" className="group w-full sm:w-auto">
+                  View My Orders
+                  <ChevronRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
               </Link>
             </div>
           </div>
@@ -366,22 +454,31 @@ export default function CheckoutPage() {
                 Cart
               </Link>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              <span className="text-foreground">Checkout</span>
+              <span className="text-foreground font-semibold">Checkout</span>
             </div>
           </div>
         </div>
 
         <div className="container max-w-6xl mx-auto px-4 py-16">
-          <h1 className="text-5xl md:text-6xl font-extrabold mb-10 tracking-tight">Secure <span className="text-primary">Checkout</span></h1>
+          {/* Page header with badge */}
+          <div className="text-center lg:text-left mb-10">
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium mb-4">
+              <Lock className="w-4 h-4" />
+              <span>Secure checkout</span>
+            </div>
+            <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight">
+              Complete Your <span className="text-primary">Order</span>
+            </h1>
+          </div>
 
           <form onSubmit={handleSubmit}>
             <div className="grid lg:grid-cols-3 gap-10">
               {/* Left: Shipping + Payment */}
               <div className="lg:col-span-2 space-y-8">
                 {/* Shipping */}
-                <Card className="athletic-card border-border/50 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
-                  <CardHeader className="pl-8 pb-4">
+                <Card className="overflow-hidden border-0 shadow-xl">
+                  <div className="h-2 bg-gradient-to-r from-primary to-primary/60" />
+                  <CardHeader className="pb-4">
                     <CardTitle className="flex items-center gap-3 text-2xl">
                       <div className="p-2 bg-primary/10 rounded-lg">
                         <Truck className="w-6 h-6 text-primary" />
@@ -389,9 +486,11 @@ export default function CheckoutPage() {
                       Shipping Address
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-5 px-8 pb-8">
+                  <CardContent className="space-y-5">
                     <div className="space-y-2">
-                      <Label htmlFor="fullName" className="font-bold text-muted-foreground uppercase text-xs tracking-wider">Full Name</Label>
+                      <Label htmlFor="fullName" className="font-bold text-muted-foreground uppercase text-xs tracking-wider">
+                        Full Name
+                      </Label>
                       <Input
                         id="fullName"
                         name="fullName"
@@ -403,7 +502,9 @@ export default function CheckoutPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="address" className="font-bold text-muted-foreground uppercase text-xs tracking-wider">Street Address</Label>
+                      <Label htmlFor="address" className="font-bold text-muted-foreground uppercase text-xs tracking-wider">
+                        Street Address
+                      </Label>
                       <Input
                         id="address"
                         name="address"
@@ -416,7 +517,9 @@ export default function CheckoutPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-5">
                       <div className="space-y-2">
-                        <Label htmlFor="city" className="font-bold text-muted-foreground uppercase text-xs tracking-wider">City</Label>
+                        <Label htmlFor="city" className="font-bold text-muted-foreground uppercase text-xs tracking-wider">
+                          City
+                        </Label>
                         <Input
                           id="city"
                           name="city"
@@ -428,7 +531,9 @@ export default function CheckoutPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="zip" className="font-bold text-muted-foreground uppercase text-xs tracking-wider">ZIP / Postal Code</Label>
+                        <Label htmlFor="zip" className="font-bold text-muted-foreground uppercase text-xs tracking-wider">
+                          ZIP / Postal Code
+                        </Label>
                         <Input
                           id="zip"
                           name="zip"
@@ -441,7 +546,9 @@ export default function CheckoutPage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="country" className="font-bold text-muted-foreground uppercase text-xs tracking-wider">Country</Label>
+                      <Label htmlFor="country" className="font-bold text-muted-foreground uppercase text-xs tracking-wider">
+                        Country
+                      </Label>
                       <Input
                         id="country"
                         name="country"
@@ -456,9 +563,9 @@ export default function CheckoutPage() {
                 </Card>
 
                 {/* Payment */}
-                <Card className="athletic-card border-border/50 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
-                  <CardHeader className="pl-8 pb-4">
+                <Card className="overflow-hidden border-0 shadow-xl">
+                  <div className="h-2 bg-gradient-to-r from-blue-500 to-blue-400" />
+                  <CardHeader className="pb-4">
                     <CardTitle className="flex items-center gap-3 text-2xl">
                       <div className="p-2 bg-blue-500/10 rounded-lg">
                         <CreditCard className="w-6 h-6 text-blue-500" />
@@ -466,7 +573,7 @@ export default function CheckoutPage() {
                       Payment Details
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-5 px-8 pb-8">
+                  <CardContent className="space-y-5">
                     {/* Mock notice */}
                     <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-4 flex items-start gap-3 text-yellow-600 dark:text-yellow-400">
                       <Lock className="w-5 h-5 flex-shrink-0 mt-0.5" />
@@ -476,7 +583,9 @@ export default function CheckoutPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="cardName" className="font-bold text-muted-foreground uppercase text-xs tracking-wider">Name on Card</Label>
+                      <Label htmlFor="cardName" className="font-bold text-muted-foreground uppercase text-xs tracking-wider">
+                        Name on Card
+                      </Label>
                       <Input
                         id="cardName"
                         name="cardName"
@@ -488,7 +597,9 @@ export default function CheckoutPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="cardNumber" className="font-bold text-muted-foreground uppercase text-xs tracking-wider">Card Number</Label>
+                      <Label htmlFor="cardNumber" className="font-bold text-muted-foreground uppercase text-xs tracking-wider">
+                        Card Number
+                      </Label>
                       <div className="relative">
                         <Input
                           id="cardNumber"
@@ -505,7 +616,9 @@ export default function CheckoutPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-5">
                       <div className="space-y-2">
-                        <Label htmlFor="expiry" className="font-bold text-muted-foreground uppercase text-xs tracking-wider">Expiry Date</Label>
+                        <Label htmlFor="expiry" className="font-bold text-muted-foreground uppercase text-xs tracking-wider">
+                          Expiry Date
+                        </Label>
                         <Input
                           id="expiry"
                           name="expiry"
@@ -518,7 +631,9 @@ export default function CheckoutPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="cvc" className="font-bold text-muted-foreground uppercase text-xs tracking-wider">Security Code (CVC)</Label>
+                        <Label htmlFor="cvc" className="font-bold text-muted-foreground uppercase text-xs tracking-wider">
+                          Security Code (CVC)
+                        </Label>
                         <Input
                           id="cvc"
                           name="cvc"
@@ -537,9 +652,12 @@ export default function CheckoutPage() {
 
               {/* Right: Order Summary */}
               <div className="lg:w-[400px]">
-                <Card className="athletic-card sticky top-24 border-border/50">
+                <Card className="sticky top-24 overflow-hidden border-0 shadow-xl">
+                  <div className="h-2 bg-gradient-to-r from-primary to-primary/60" />
                   <CardHeader className="bg-secondary/30 border-b border-border/50 pb-5">
-                    <CardTitle className="text-2xl font-extrabold tracking-tight">Order Summary</CardTitle>
+                    <CardTitle className="text-2xl font-extrabold tracking-tight">
+                      Order Summary
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="p-6 space-y-6">
                     {/* Items */}
@@ -555,9 +673,7 @@ export default function CheckoutPage() {
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold truncate">
-                              {item.name}
-                            </p>
+                            <p className="text-sm font-bold truncate">{item.name}</p>
                             <p className="text-sm text-muted-foreground font-medium mt-1">
                               Qty: <span className="text-foreground">{item.quantity}</span>
                             </p>
@@ -579,9 +695,7 @@ export default function CheckoutPage() {
                         <span>Shipping</span>
                         <span>
                           {shipping === 0 ? (
-                            <span className="text-green-500 font-bold">
-                              Free
-                            </span>
+                            <span className="text-green-500 font-bold">Free</span>
                           ) : (
                             <span className="text-foreground">${shipping.toFixed(2)}</span>
                           )}
@@ -589,29 +703,42 @@ export default function CheckoutPage() {
                       </div>
                       {shipping > 0 && (
                         <div className="w-full bg-secondary rounded-full h-1.5 mt-2">
-                          <div className="bg-primary h-1.5 rounded-full" style={{ width: `${Math.min((totalPrice / 100) * 100, 100)}%` }} />
+                          <div
+                            className="bg-primary h-1.5 rounded-full"
+                            style={{ width: `${Math.min((totalPrice / 100) * 100, 100)}%` }}
+                          />
                           <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mt-2 text-center">
                             ${(100 - totalPrice).toFixed(2)} away from free shipping
                           </p>
                         </div>
                       )}
-                      
+
                       <div className="flex justify-between font-extrabold text-2xl pt-4 border-t border-border/50 mt-2">
                         <span>Total</span>
-                        <span className="text-primary">
-                          ${grandTotal.toFixed(2)}
-                        </span>
+                        <span className="text-primary">${grandTotal.toFixed(2)}</span>
                       </div>
                     </div>
 
-                    <Button type="submit" size="lg" className="w-full h-16 text-lg rounded-xl shadow-lg hover:scale-[1.03] transition-all relative overflow-hidden group">
+                    <Button
+                      type="submit"
+                      size="lg"
+                      className="w-full h-16 text-lg rounded-xl shadow-lg hover:scale-[1.03] transition-all relative overflow-hidden group"
+                    >
                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer" />
                       <Lock className="w-5 h-5 mr-3" />
                       Pay ${grandTotal.toFixed(2)} Now
                     </Button>
 
                     <p className="text-xs text-center text-muted-foreground font-medium">
-                      By proceeding, you agree to our <Link href="#" className="underline hover:text-primary transition-colors">Terms of Service</Link> and <Link href="#" className="underline hover:text-primary transition-colors">Privacy Policy</Link>.
+                      By proceeding, you agree to our{" "}
+                      <Link href="#" className="underline hover:text-primary transition-colors">
+                        Terms of Service
+                      </Link>{" "}
+                      and{" "}
+                      <Link href="#" className="underline hover:text-primary transition-colors">
+                        Privacy Policy
+                      </Link>
+                      .
                     </p>
                   </CardContent>
                 </Card>

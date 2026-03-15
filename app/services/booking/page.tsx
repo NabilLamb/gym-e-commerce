@@ -1,5 +1,3 @@
-// app/services/booking/page.tsx
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -31,6 +29,8 @@ import {
   QrCode,
 } from "lucide-react";
 
+import { validateName, validateEmail, validatePhone } from "@/lib/validations";
+
 interface Service {
   _id: string;
   name: string;
@@ -48,19 +48,19 @@ export default function BookingPage() {
 
   const preselectedId = searchParams.get("service") || "";
 
-  const [services, setServices]         = useState<Service[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [loadingServices, setLoadingServices] = useState(true);
-  const [submitting, setSubmitting]     = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [confirmedBooking, setConfirmedBooking] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     serviceId: preselectedId,
-    fullName:  "",
-    email:     "",
-    phone:     "",
-    date:      "",
-    time:      "",
-    notes:     "",
+    fullName: "",
+    email: "",
+    phone: "",
+    date: "",
+    time: "",
+    notes: "",
   });
 
   useEffect(() => {
@@ -81,13 +81,42 @@ export default function BookingPage() {
       setFormData((prev) => ({
         ...prev,
         fullName: prev.fullName || user.name || "",
-        email:    prev.email    || user.email || "",
+        email: prev.email || user.email || "",
       }));
     }
   }, [user]);
 
   const selectedService = services.find((s) => s._id === formData.serviceId);
   const today = new Date().toISOString().split("T")[0];
+
+  // 1. New validation function inside the component
+  const validateForm = (): boolean => {
+    const errors: string[] = [];
+    
+    if (!formData.serviceId) errors.push("Please select a service.");
+    
+    const nameErr = validateName(formData.fullName);
+    if (nameErr) errors.push(nameErr);
+    
+    const emailErr = validateEmail(formData.email);
+    if (emailErr) errors.push(emailErr);
+    
+    const phoneErr = validatePhone(formData.phone);
+    if (phoneErr) errors.push(phoneErr);
+    
+    if (!formData.date) errors.push("Please select a date.");
+    if (!formData.time) errors.push("Please select a time.");
+
+    if (errors.length > 0) {
+      toast({
+        title: "Please fix the following:",
+        description: errors[0], // Shows the first error found
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -96,6 +125,10 @@ export default function BookingPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // 2. Run validation before proceeding
+    if (!validateForm()) return;
+
     setSubmitting(true);
     try {
       const res = await fetch("/api/bookings", {
@@ -136,7 +169,6 @@ export default function BookingPage() {
 
             <Card className="mb-8 text-left">
               <CardContent className="p-6 space-y-5">
-                {/* Check-in code */}
                 <div className="flex flex-col items-center bg-primary/5 border border-primary/20 rounded-xl p-5">
                   <QrCode className="w-8 h-8 text-primary mb-2" />
                   <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Check-in Code</p>
@@ -203,7 +235,6 @@ export default function BookingPage() {
     <>
       <Header />
       <main className="min-h-screen bg-background">
-        {/* Breadcrumb */}
         <div className="border-b border-border bg-card">
           <div className="container max-w-7xl mx-auto px-4 py-4">
             <div className="flex items-center gap-2 text-sm">
@@ -230,8 +261,7 @@ export default function BookingPage() {
                     <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                   </div>
                 ) : (
-                  <form onSubmit={handleSubmit} className="space-y-5">
-                    {/* Service picker */}
+                  <form onSubmit={handleSubmit} className="space-y-5" noValidate>
                     <div>
                       <Label>Select Service</Label>
                       <Select
@@ -251,7 +281,6 @@ export default function BookingPage() {
                       </Select>
                     </div>
 
-                    {/* Service info card */}
                     {selectedService && (
                       <div className="bg-secondary rounded-lg p-4 space-y-2">
                         <p className="font-medium">{selectedService.name}</p>
@@ -273,38 +302,35 @@ export default function BookingPage() {
                       </div>
                     )}
 
-                    {/* Personal info */}
                     <div>
                       <Label htmlFor="fullName">Full Name</Label>
                       <Input id="fullName" name="fullName" value={formData.fullName}
-                        onChange={handleChange} placeholder="John Doe" required />
+                        onChange={handleChange} placeholder="John Doe" />
                     </div>
                     <div>
                       <Label htmlFor="email">Email Address</Label>
                       <Input id="email" name="email" type="email" value={formData.email}
-                        onChange={handleChange} placeholder="john@example.com" required />
+                        onChange={handleChange} placeholder="john@example.com" />
                     </div>
                     <div>
                       <Label htmlFor="phone">Phone Number</Label>
                       <Input id="phone" name="phone" type="tel" value={formData.phone}
-                        onChange={handleChange} placeholder="+1 (555) 000-0000" required />
+                        onChange={handleChange} placeholder="+1 (555) 000-0000" />
                     </div>
 
-                    {/* Date & time */}
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="date">Preferred Date</Label>
                         <Input id="date" name="date" type="date" min={today}
-                          value={formData.date} onChange={handleChange} required />
+                          value={formData.date} onChange={handleChange} />
                       </div>
                       <div>
                         <Label htmlFor="time">Preferred Time</Label>
                         <Input id="time" name="time" type="time"
-                          value={formData.time} onChange={handleChange} required />
+                          value={formData.time} onChange={handleChange} />
                       </div>
                     </div>
 
-                    {/* Notes */}
                     <div>
                       <Label htmlFor="notes">
                         Notes{" "}
@@ -315,7 +341,6 @@ export default function BookingPage() {
                         placeholder="Any injuries, goals, or special requests..." />
                     </div>
 
-                    {/* Price summary */}
                     {selectedService && (
                       <div className="border-t border-border pt-4 flex justify-between items-center">
                         <span className="text-muted-foreground">Session price</span>
