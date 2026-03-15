@@ -28,8 +28,6 @@ export async function middleware(req: NextRequest) {
       if (!decoded) {
         return NextResponse.redirect(new URL("/auth", req.url))
       }
-
-      console.log("Middleware: token verified, role =", decoded.role)
       
       if (decoded.role !== "admin") {
         console.log("Middleware: role not admin, redirecting to home")

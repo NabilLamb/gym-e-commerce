@@ -1,0 +1,2 @@
+.next/dev/types/validator.ts(144,31): error TS2344: Type 'typeof import("C:/Users/pc/Desktop/gym-e-commerce/app/products/page")' does not satisfy the constraint 'AppPageConfig<"/products">'.
+  Property 'default' is missing in type 'typeof import("C:/Users/pc/Desktop/gym-e-commerce/app/products/page")' but required in type 'AppPageConfig<"/products">'.

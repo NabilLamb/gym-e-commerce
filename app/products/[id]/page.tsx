@@ -20,6 +20,7 @@ import {
   Package,
   Tag,
   MessageSquare,
+  X,
 } from "lucide-react";
 
 interface Variant {
@@ -98,12 +99,24 @@ export default function ProductDetailPage() {
   const [activeImage, setActiveImage] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [isDescExpanded, setIsDescExpanded] = useState(false);
 
   // Review form state
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
-  const [submitting, setSubmitting] = useState(false);
   const [editingReview, setEditingReview] = useState<Review | null>(null);
+
+  const [fromDashboard, setFromDashboard] = useState(false);
+  const [dashboardTab, setDashboardTab] = useState("products");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      setFromDashboard(sp.get("from") === "dashboard");
+      setDashboardTab(sp.get("tab") || "products");
+    }
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -262,17 +275,53 @@ export default function ProductDetailPage() {
     <>
       <Header />
       <main className="min-h-screen bg-background">
+        {/* Lightbox */}
+        {isLightboxOpen && (
+          <div 
+            className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out animate-in fade-in-0 duration-300"
+            onClick={() => setIsLightboxOpen(false)}
+          >
+            <div className="relative w-full max-w-5xl h-[80vh]" onClick={(e) => e.stopPropagation()}>
+              <Image
+                src={product.images?.[activeImage] || "/placeholder.svg"}
+                alt={product.name}
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
+            <button 
+              className="absolute top-6 right-6 text-foreground bg-background/50 hover:bg-[#FF531A] hover:text-white transition-colors rounded-full p-2 cursor-pointer"
+              onClick={() => setIsLightboxOpen(false)}
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+        )}
+
         {/* Breadcrumb */}
         <div className="border-b border-border bg-card">
           <div className="container max-w-7xl mx-auto px-4 py-4">
             <div className="flex items-center gap-2 text-sm flex-wrap">
-              <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">Home</Link>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              <Link href="/products" className="text-muted-foreground hover:text-foreground transition-colors">Products</Link>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              <span className="text-foreground font-medium capitalize">{product.category}</span>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              <span className="text-foreground font-medium truncate max-w-[200px]">{product.name}</span>
+              {fromDashboard ? (
+                <>
+                  <Link href={`/admin?tab=${dashboardTab}`} className="text-muted-foreground hover:text-foreground transition-colors font-semibold truncate hover:text-primary">
+                    ← Back to Dashboard
+                  </Link>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-foreground font-medium truncate max-w-[200px]">{product.name}</span>
+                </>
+              ) : (
+                <>
+                  <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">Home</Link>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  <Link href="/products" className="text-muted-foreground hover:text-foreground transition-colors">Products</Link>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-foreground font-medium capitalize">{product.category}</span>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-foreground font-medium truncate max-w-[200px]">{product.name}</span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -284,12 +333,15 @@ export default function ProductDetailPage() {
 
               {/* Images */}
               <div className="space-y-4">
-                <div className="relative h-96 lg:h-[500px] rounded-xl overflow-hidden bg-secondary border border-border">
+                <div 
+                  className="relative h-96 lg:h-[500px] rounded-xl overflow-hidden bg-secondary border border-border cursor-zoom-in group"
+                  onClick={() => setIsLightboxOpen(true)}
+                >
                   <Image
                     src={product.images?.[activeImage] || "/placeholder.svg"}
                     alt={product.name}
                     fill
-                    className="object-cover"
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
                     priority
                   />
                   {discount && (
@@ -325,7 +377,7 @@ export default function ProductDetailPage() {
               </div>
 
               {/* Info */}
-              <div className="space-y-6">
+              <div className="lg:sticky lg:top-24 flex flex-col space-y-6 self-start pb-8">
                 <div>
                   <p className="text-sm text-muted-foreground capitalize mb-1 flex items-center gap-1">
                     <Tag className="w-3 h-3" /> {product.category}
@@ -359,7 +411,20 @@ export default function ProductDetailPage() {
                 </div>
 
                 {/* Description */}
-                <p className="text-muted-foreground leading-relaxed">{product.description}</p>
+                <div>
+                  <div className={`relative overflow-hidden transition-all duration-300 ${!isDescExpanded ? 'line-clamp-4' : ''}`}>
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{product.description}</p>
+                    {!isDescExpanded && (
+                      <div className="absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-background to-transparent" />
+                    )}
+                  </div>
+                  <button 
+                    onClick={() => setIsDescExpanded(!isDescExpanded)} 
+                    className="mt-2 text-[#FF531A] hover:text-[#FF531A]/80 font-medium text-sm transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    {isDescExpanded ? "Show less" : "Read more"}
+                  </button>
+                </div>
 
                 {/* Variants */}
                 {product.variants && product.variants.length > 0 && (

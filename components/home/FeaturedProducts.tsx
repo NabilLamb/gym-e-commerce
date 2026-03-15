@@ -123,12 +123,12 @@ export function FeaturedProducts() {
                   >
                     <div className="rounded-xl border border-border overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-200 bg-card h-full flex flex-col">
                       {/* Image */}
-                      <div className="relative h-52 w-full bg-secondary overflow-hidden">
+                      <div className="relative h-52 w-full bg-zinc-100 dark:bg-zinc-900 overflow-hidden">
                         <Image
                           src={mainImage}
                           alt={product.name}
                           fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="object-contain group-hover:scale-105 transition-transform duration-300"
                         />
                         {discount && (
                           <span className="absolute top-3 left-3 bg-primary text-primary-foreground text-xs font-bold px-2 py-1 rounded-full">

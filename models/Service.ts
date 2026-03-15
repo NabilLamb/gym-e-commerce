@@ -12,6 +12,7 @@ export interface IService extends Document {
   location: string;
   image: string;
   isActive: boolean;
+  includes: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,6 +32,7 @@ const ServiceSchema = new Schema<IService>(
     location: { type: String, required: true, default: "Main Floor" },
     image:    { type: String, required: true },
     isActive: { type: Boolean, default: true },
+    includes: { type: [String], default: [] },
   },
   { timestamps: true }
 );

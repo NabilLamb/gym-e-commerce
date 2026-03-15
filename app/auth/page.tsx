@@ -62,11 +62,17 @@ export default function AuthPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Welcome to FitHub</CardTitle>
-            <CardDescription className="text-center">
+      <main className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden pt-24">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 bg-background -z-20" />
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
+          <div className="absolute top-[10%] left-[20%] w-[40%] h-[40%] rounded-full bg-primary/20 blur-[120px] opacity-60 animate-pulse" />
+          <div className="absolute bottom-[10%] right-[10%] w-[30%] h-[30%] rounded-full bg-blue-500/10 blur-[100px] opacity-50 animate-pulse delay-700" />
+        </div>
+        <Card className="w-full max-w-md athletic-card shadow-2xl">
+          <CardHeader className="space-y-2 pb-6">
+            <CardTitle className="text-4xl text-center tracking-tight">Welcome to FitHub</CardTitle>
+            <CardDescription className="text-center text-base">
               {mode === "login" ? "Sign in to your account" : "Create a new account"}
             </CardDescription>
           </CardHeader>

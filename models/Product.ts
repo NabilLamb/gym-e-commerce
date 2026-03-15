@@ -20,6 +20,7 @@ export interface IProduct extends Document {
   averageRating: number;
   numReviews: number;
   totalSold: number;
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -49,6 +50,7 @@ const ProductSchema = new Schema<IProduct>(
     averageRating: { type: Number, default: 0, min: 0, max: 5 },
     numReviews: { type: Number, default: 0, min: 0 },
     totalSold: { type: Number, default: 0, min: 0 }, // ← new field
+    isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
 );

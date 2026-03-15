@@ -47,15 +47,15 @@ export function ProductCard({ product }: { product: Product }) {
           const hasReviews = product.numReviews && product.numReviews > 0;
 
   return (
-    <Link href={`/products/${product._id}`} className="group block">
-      <div className="border border-border rounded-lg overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-200 bg-card h-full flex flex-col">
+    <Link href={`/products/${product._id}`} className="group block h-full">
+      <div className="athletic-card h-full flex flex-col rounded-2xl">
         {/* Image */}
-        <div className="relative h-48 w-full bg-secondary overflow-hidden">
+        <div className="relative h-52 w-full bg-zinc-100 dark:bg-zinc-900 overflow-hidden">
           <Image
             src={mainImage}
             alt={product.name}
             fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            className="object-contain group-hover:scale-105 transition-transform duration-300"
           />
           {product.originalPrice && (
             <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs font-bold px-2 py-1 rounded">

@@ -2,30 +2,37 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { DeleteButton } from "@/components/admin/DeleteButton";
-import { ChevronRight, Plus, Edit, BarChart3 } from "lucide-react";
+import { AdminListRow } from "@/components/admin/AdminListRow";
+import { ChevronRight, Plus, Edit, BarChart3, ShoppingBag, Eye, ToggleLeft, ToggleRight } from "lucide-react";
 
-const STATUS_COLORS: Record<string, string> = {
+const BOOKING_STATUS_COLORS: Record<string, string> = {
   pending:   "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
   confirmed: "bg-blue-500/10 text-blue-500 border-blue-500/20",
   completed: "bg-green-500/10 text-green-500 border-green-500/20",
   cancelled: "bg-red-500/10 text-red-500 border-red-500/20",
   "no-show": "bg-gray-500/10 text-gray-400 border-gray-500/20",
+};
+
+const ORDER_STATUS_COLORS: Record<string, string> = {
+  pending:    "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+  processing: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+  shipped:    "bg-purple-500/10 text-purple-500 border-purple-500/20",
+  delivered:  "bg-green-500/10 text-green-500 border-green-500/20",
+  cancelled:  "bg-red-500/10 text-red-500 border-red-500/20",
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -37,107 +44,167 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export default function AdminPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center p-8">Loading dashboard...</div>}>
+      <AdminDashboardContent />
+    </Suspense>
+  );
+}
+
+function AdminDashboardContent() {
+  const searchParams = useSearchParams();
+  const defaultTab = searchParams.get("tab") || "products";
+  
   const { toast } = useToast();
-  const [products, setProducts]   = useState<any[]>([]);
-  const [services, setServices]   = useState<any[]>([]);
-  const [bookings, setBookings]   = useState<any[]>([]);
-  const [loading, setLoading]     = useState(true);
+  const [products, setProducts] = useState<any[]>([]);
+  const [services, setServices] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [orders,   setOrders  ] = useState<any[]>([]);
+  const [loading,  setLoading ] = useState(true);
 
   const fetchAll = async () => {
-    const [p, s, b] = await Promise.all([
+    const [p, s, b, o] = await Promise.all([
       fetch("/api/products").then((r) => r.json()),
-      fetch("/api/services").then((r) => r.json()),
+      // Admin fetches ALL services including inactive
+      fetch("/api/services?all=true", { credentials: "include" }).then((r) => r.json()),
       fetch("/api/bookings", { credentials: "include" }).then((r) => r.ok ? r.json() : []),
+      fetch("/api/orders",   { credentials: "include" }).then((r) => r.ok ? r.json() : []),
     ]);
-    setProducts(p);
-    setServices(s);
-    setBookings(b);
+    setProducts(Array.isArray(p) ? p : []);
+    setServices(Array.isArray(s) ? s : []);
+    setBookings(Array.isArray(b) ? b : []);
+    setOrders(Array.isArray(o) ? o : []);
   };
 
-  useEffect(() => {
-    fetchAll().finally(() => setLoading(false));
-  }, []);
+  useEffect(() => { fetchAll().finally(() => setLoading(false)); }, []);
 
+  // ── Handlers ──────────────────────────────────────────────────
   const handleDeleteProduct = async (id: string) => {
     const res = await fetch(`/api/products/${id}`, { method: "DELETE", credentials: "include" });
-    if (res.ok) {
-      setProducts((prev) => prev.filter((p) => p._id !== id));
-      toast({ title: "Product deleted" });
-    }
+    if (res.ok) { setProducts((p) => p.filter((x) => x._id !== id)); toast({ title: "Product deleted" }); }
   };
 
   const handleDeleteService = async (id: string) => {
     const res = await fetch("/api/services", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
+      method: "DELETE", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
+    if (res.ok) { setServices((s) => s.filter((x) => x._id !== id)); toast({ title: "Service deleted" }); }
+  };
+
+  const handleToggleProduct = async (p: any) => {
+    const res = await fetch(`/api/products/${p._id}/toggle-active`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ isActive: !p.isActive }),
+    });
     if (res.ok) {
-      setServices((prev) => prev.filter((s) => s._id !== id));
-      toast({ title: "Service deleted" });
+      setProducts((prev) =>
+        prev.map((x) => x._id === p._id ? { ...x, isActive: !p.isActive } : x)
+      );
+      toast({
+        title: p.isActive ? "Product hidden from users" : "Product is now visible to users",
+      });
+    }
+  };
+
+  // Quick toggle isActive without going to edit page
+  const handleToggleService = async (s: any) => {
+    const res = await fetch("/api/services", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ id: s._id, isActive: !s.isActive }),
+    });
+    if (res.ok) {
+      setServices((prev) =>
+        prev.map((x) => x._id === s._id ? { ...x, isActive: !s.isActive } : x)
+      );
+      toast({
+        title: s.isActive ? "Service hidden from users" : "Service is now visible to users",
+      });
     }
   };
 
   const handleBookingStatus = async (id: string, status: string) => {
     const res = await fetch("/api/bookings", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
+      method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include",
       body: JSON.stringify({ id, status }),
     });
-    if (res.ok) {
-      setBookings((prev) => prev.map((b) => b._id === id ? { ...b, status } : b));
-      toast({ title: "Status updated" });
-    }
+    if (res.ok) { setBookings((b) => b.map((x) => x._id === id ? { ...x, status } : x)); toast({ title: "Booking updated" }); }
   };
 
   const handleDeleteBooking = async (id: string) => {
     const res = await fetch("/api/bookings", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
+      method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include",
       body: JSON.stringify({ id }),
     });
-    if (res.ok) {
-      setBookings((prev) => prev.filter((b) => b._id !== id));
-      toast({ title: "Booking deleted" });
-    }
+    if (res.ok) { setBookings((b) => b.filter((x) => x._id !== id)); toast({ title: "Booking deleted" }); }
   };
 
-  const activeBookings = bookings.filter((b) =>
-    b.status === "pending" || b.status === "confirmed"
-  ).length;
+  const handleOrderStatus = async (id: string, status: string) => {
+    const res = await fetch("/api/orders", {
+      method: "PATCH", headers: { "Content-Type": "application/json" }, credentials: "include",
+      body: JSON.stringify({ id, status }),
+    });
+    if (res.ok) { setOrders((o) => o.map((x) => x._id === id ? { ...x, status } : x)); toast({ title: "Order updated" }); }
+  };
+
+  const handleDeleteOrder = async (id: string) => {
+    const res = await fetch("/api/orders", {
+      method: "DELETE", headers: { "Content-Type": "application/json" }, credentials: "include",
+      body: JSON.stringify({ id }),
+    });
+    if (res.ok) { setOrders((o) => o.filter((x) => x._id !== id)); toast({ title: "Order deleted" }); }
+  };
+
+  // ── Stats ──────────────────────────────────────────────────────
+  const activeBookings = bookings.filter((b) => ["pending", "confirmed"].includes(b.status)).length;
+  const activeOrders   = orders.filter((o) => ["pending", "processing", "shipped"].includes(o.status)).length;
+  const totalRevenue   = orders
+    .filter((o) => o.status !== "cancelled")
+    .reduce((sum, o) => sum + (o.total || 0), 0);
 
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-background">
-        <div className="border-b border-border bg-card">
+      <main className="min-h-screen bg-background relative pb-24">
+        <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-red-500/5 via-background to-background -z-10" />
+        <div className="border-b border-border/50 bg-background/50 backdrop-blur-md sticky top-0 z-40">
           <div className="container max-w-7xl mx-auto px-4 py-4">
-            <div className="flex items-center gap-2 text-sm">
-              <Link href="/" className="text-muted-foreground hover:text-foreground">Home</Link>
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Link href="/" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer">Home</Link>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              <span className="text-foreground font-medium">Admin Dashboard</span>
+              <span className="text-foreground">Admin Dashboard</span>
             </div>
           </div>
         </div>
 
-        <section className="py-12">
+        <section className="py-16 md:py-24">
           <div className="container max-w-7xl mx-auto px-4">
-            <h1 className="text-4xl font-bold mb-8">Admin Dashboard</h1>
+            <h1 className="text-5xl md:text-6xl font-extrabold mb-10 tracking-tight">Admin <span className="text-red-500">Dashboard</span></h1>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-              <StatCard title="Total Revenue"  value="$0.00" />
-              <StatCard title="Total Orders"   value="0" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+              <StatCard title="Total Revenue"  value={`$${totalRevenue.toFixed(2)}`} />
+              <StatCard title="Total Orders"   value={orders.length.toString()} />
               <StatCard title="Total Bookings" value={bookings.length.toString()} />
               <StatCard title="Total Products" value={products.length.toString()} />
             </div>
 
-            <Tabs defaultValue="products" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+            <Tabs defaultValue={defaultTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="products">Products</TabsTrigger>
                 <TabsTrigger value="services">Services</TabsTrigger>
+                <TabsTrigger value="orders">
+                  Orders
+                  {activeOrders > 0 && (
+                    <span className="ml-2 bg-primary text-primary-foreground text-xs rounded-full px-1.5 py-0.5">
+                      {activeOrders}
+                    </span>
+                  )}
+                </TabsTrigger>
                 <TabsTrigger value="bookings">
                   Bookings
                   {activeBookings > 0 && (
@@ -153,30 +220,26 @@ export default function AdminPage() {
                 <div className="flex justify-between items-center">
                   <h2 className="text-2xl font-bold">Manage Products</h2>
                   <Link href="/admin/products/add">
-                    <Button><Plus className="w-4 h-4 mr-2" /> Add Product</Button>
+                    <Button><Plus className="w-4 h-4 mr-2" />Add Product</Button>
                   </Link>
                 </div>
                 {loading ? <p className="text-muted-foreground">Loading...</p>
                   : products.length === 0 ? <p className="text-muted-foreground">No products yet.</p>
                   : (
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                       {products.map((p) => (
-                        <Card key={p._id}>
-                          <CardContent className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                            <div>
-                              <p className="font-semibold">{p.name}</p>
-                              <p className="text-sm text-muted-foreground capitalize">
-                                {p.category} — ${p.price}
-                              </p>
-                            </div>
-                            <div className="flex gap-2">
-                              <Link href={`/admin/products/edit/${p._id}`}>
-                                <Button size="sm" variant="outline"><Edit className="w-4 h-4" /></Button>
-                              </Link>
-                              <DeleteButton id={p._id} onDelete={handleDeleteProduct} />
-                            </div>
-                          </CardContent>
-                        </Card>
+                        <AdminListRow
+                          key={p._id}
+                          id={p._id.toString()}
+                          name={p.name}
+                          metadata={`${p.category.charAt(0).toUpperCase() + p.category.slice(1)} — $${p.price.toFixed(2)}`}
+                          isActive={p.isActive !== false}
+                          hasToggle={true}
+                          editUrl={`/admin/products/edit/${p._id}`}
+                          viewUrl={`/products/${p._id}?from=dashboard&tab=products`}
+                          onDelete={handleDeleteProduct}
+                          onToggleActive={() => handleToggleProduct(p)}
+                        />
                       ))}
                     </div>
                   )}
@@ -187,28 +250,93 @@ export default function AdminPage() {
                 <div className="flex justify-between items-center">
                   <h2 className="text-2xl font-bold">Manage Services</h2>
                   <Link href="/admin/services/add">
-                    <Button><Plus className="w-4 h-4 mr-2" /> Add Service</Button>
+                    <Button><Plus className="w-4 h-4 mr-2" />Add Service</Button>
                   </Link>
                 </div>
                 {loading ? <p className="text-muted-foreground">Loading...</p>
                   : services.length === 0 ? <p className="text-muted-foreground">No services yet.</p>
                   : (
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                       {services.map((s) => (
-                        <Card key={s._id}>
-                          <CardContent className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                            <div>
-                              <p className="font-semibold">{s.name}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {CATEGORY_LABELS[s.category] || s.category} —{" "}
-                                ${s.price} · {s.duration} · {s.location}
-                              </p>
+                        <AdminListRow
+                          key={s._id}
+                          id={s._id.toString()}
+                          name={s.name}
+                          metadata={`${CATEGORY_LABELS[s.category] || s.category} — $${s.price} · ${s.duration} · ${s.location}`}
+                          isActive={s.isActive !== false}
+                          hasToggle={true}
+                          editUrl={`/admin/services/edit/${s._id}`}
+                          viewUrl={`/services/${s._id}?from=dashboard&tab=services`}
+                          onDelete={handleDeleteService}
+                          onToggleActive={() => handleToggleService(s)}
+                        />
+                      ))}
+                    </div>
+                  )}
+              </TabsContent>
+
+              {/* ── Orders ── */}
+              <TabsContent value="orders" className="space-y-4 mt-6">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-2xl font-bold">Manage Orders</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {orders.length} total · {activeOrders} active
+                  </p>
+                </div>
+                {loading ? <p className="text-muted-foreground">Loading...</p>
+                  : orders.length === 0 ? <p className="text-muted-foreground">No orders yet.</p>
+                  : (
+                    <div className="space-y-4">
+                      {orders.map((o) => (
+                        <Card key={o._id} className="athletic-card border-border/50 overflow-hidden hover:border-primary/50 transition-colors">
+                          <CardContent className="p-5">
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p className="font-bold text-primary">{o.orderNumber}</p>
+                                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${ORDER_STATUS_COLORS[o.status] || ""}`}>
+                                    {o.status}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {o.shippingAddress?.fullName} ·{" "}
+                                  {new Date(o.createdAt).toLocaleDateString("en-US", {
+                                    month: "short", day: "numeric", year: "numeric",
+                                  })}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {o.shippingAddress?.address}, {o.shippingAddress?.city}, {o.shippingAddress?.country}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <p className="font-bold text-primary mr-2">${o.total?.toFixed(2)}</p>
+                                <Select value={o.status} onValueChange={(v) => handleOrderStatus(o._id, v)}>
+                                  <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="pending">Pending</SelectItem>
+                                    <SelectItem value="processing">Processing</SelectItem>
+                                    <SelectItem value="shipped">Shipped</SelectItem>
+                                    <SelectItem value="delivered">Delivered</SelectItem>
+                                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <DeleteButton id={o._id} onDelete={handleDeleteOrder} />
+                              </div>
                             </div>
-                            <div className="flex gap-2">
-                              <Link href={`/admin/services/edit/${s._id}`}>
-                                <Button size="sm" variant="outline"><Edit className="w-4 h-4" /></Button>
-                              </Link>
-                              <DeleteButton id={s._id} onDelete={handleDeleteService} />
+                            <div className="border-t border-border pt-3 space-y-2">
+                              {o.items?.map((item: any, i: number) => (
+                                <div key={i} className="flex items-center gap-3">
+                                  <div className="relative w-9 h-9 rounded-md overflow-hidden bg-secondary flex-shrink-0">
+                                    {item.image
+                                      ? <Image src={item.image} alt={item.name} fill className="object-cover" />
+                                      : <ShoppingBag className="w-4 h-4 text-muted-foreground m-auto mt-2.5" />}
+                                  </div>
+                                  <p className="text-sm flex-1 text-muted-foreground">
+                                    {item.name} <span className="text-foreground font-medium">×{item.quantity}</span>
+                                  </p>
+                                  <p className="text-sm font-medium">${(item.price * item.quantity).toFixed(2)}</p>
+                                </div>
+                              ))}
                             </div>
                           </CardContent>
                         </Card>
@@ -228,14 +356,14 @@ export default function AdminPage() {
                 {loading ? <p className="text-muted-foreground">Loading...</p>
                   : bookings.length === 0 ? <p className="text-muted-foreground">No bookings yet.</p>
                   : (
-                    <div className="space-y-2">
+                    <div className="space-y-4">
                       {bookings.map((b) => (
-                        <Card key={b._id}>
-                          <CardContent className="p-4 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                        <Card key={b._id} className="athletic-card border-border/50 overflow-hidden hover:border-primary/50 transition-colors">
+                          <CardContent className="p-5 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap mb-1">
                                 <p className="font-semibold">{b.fullName}</p>
-                                <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${STATUS_COLORS[b.status] || ""}`}>
+                                <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${BOOKING_STATUS_COLORS[b.status] || ""}`}>
                                   {b.status}
                                 </span>
                                 <span className="text-xs font-mono bg-secondary px-2 py-0.5 rounded">
@@ -249,23 +377,12 @@ export default function AdminPage() {
                                 })}{" "}
                                 at {b.time}
                               </p>
-                              <p className="text-xs text-muted-foreground mt-0.5">
-                                {b.email} · {b.phone}
-                              </p>
-                              {b.notes && (
-                                <p className="text-xs text-muted-foreground italic mt-1">
-                                  "{b.notes}"
-                                </p>
-                              )}
+                              <p className="text-xs text-muted-foreground mt-0.5">{b.email} · {b.phone}</p>
+                              {b.notes && <p className="text-xs text-muted-foreground italic mt-1">"{b.notes}"</p>}
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
-                              <Select
-                                value={b.status}
-                                onValueChange={(v) => handleBookingStatus(b._id, v)}
-                              >
-                                <SelectTrigger className="w-36 h-8 text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
+                              <Select value={b.status} onValueChange={(v) => handleBookingStatus(b._id, v)}>
+                                <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="pending">Pending</SelectItem>
                                   <SelectItem value="confirmed">Confirmed</SelectItem>
@@ -293,14 +410,16 @@ export default function AdminPage() {
 
 function StatCard({ title, value }: { title: string; value: string }) {
   return (
-    <Card>
+    <Card className="athletic-card border-border/50 hover:-translate-y-1 transition-transform duration-300">
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-muted-foreground">{title}</p>
-            <p className="text-3xl font-bold text-primary">{value}</p>
+            <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">{title}</p>
+            <p className="text-4xl font-extrabold tracking-tight text-foreground">{value}</p>
           </div>
-          <BarChart3 className="w-10 h-10 text-primary/20" />
+          <div className="p-4 bg-primary/10 rounded-2xl">
+            <BarChart3 className="w-8 h-8 text-primary" />
+          </div>
         </div>
       </CardContent>
     </Card>

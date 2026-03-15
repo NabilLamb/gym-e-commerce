@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useTheme } from "next-themes"
+import { usePathname } from "next/navigation"
 import { Menu, X, Moon, Sun, ShoppingCart, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,39 +22,48 @@ export function Header() {
   const [mounted, setMounted] = useState(false)
   const { user, loading, logout } = useAuth()
   const { totalItems } = useCart()   // get totalItems from cart
+  const pathname = usePathname()
+  const [isScrolled, setIsScrolled] = useState(false)
 
-  useEffect(() => setMounted(true), [])
+  useEffect(() => {
+    setMounted(true)
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 0)
+    }
+    window.addEventListener("scroll", handleScroll)
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   const handleLogout = async () => {
     await logout()
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur">
+    <header className={`sticky top-0 z-50 w-full transition-all duration-300 ${isScrolled ? "backdrop-blur-md bg-background/80 border-b border-border shadow-sm" : "bg-background border-b border-transparent"}`}>
       <div className="container flex h-16 max-w-7xl items-center justify-between mx-auto px-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 font-bold text-xl">
+        <Link href="/" className="flex items-center gap-2 font-bold text-xl cursor-pointer">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-bold">F</div>
-          <span className="hidden sm:inline">FitHub</span>
+          <span className="hidden sm:inline tracking-tight">FitHub</span>
         </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8">
-          <Link href="/" className="text-sm font-medium hover:text-primary transition-colors">Home</Link>
-          <Link href="/products" className="text-sm font-medium hover:text-primary transition-colors">Products</Link>
-          <Link href="/services" className="text-sm font-medium hover:text-primary transition-colors">Services</Link>
+          <Link href="/" className={`text-sm font-semibold transition-colors cursor-pointer ${pathname === "/" ? "text-primary underline underline-offset-4" : "text-muted-foreground hover:text-foreground"}`}>Home</Link>
+          <Link href="/products" className={`text-sm font-semibold transition-colors cursor-pointer ${pathname === "/products" ? "text-primary underline underline-offset-4" : "text-muted-foreground hover:text-foreground"}`}>Products</Link>
+          <Link href="/services" className={`text-sm font-semibold transition-colors cursor-pointer ${pathname === "/services" ? "text-primary underline underline-offset-4" : "text-muted-foreground hover:text-foreground"}`}>Services</Link>
         </nav>
 
         {/* Right Side */}
         <div className="flex items-center gap-4">
           {/* Theme Toggle */}
-          <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+          <Button variant="ghost" size="icon" className="cursor-pointer hover:bg-[#FF531A] hover:text-white transition-colors" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
             {!mounted ? <div className="h-4 w-4" /> : theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
 
           {/* Cart */}
-          <Link href="/cart" className="relative">
-            <Button variant="ghost" size="icon">
+          <Link href="/cart" className="relative cursor-pointer">
+            <Button variant="ghost" size="icon" className="cursor-pointer hover:bg-[#FF531A] hover:text-white transition-colors">
               <ShoppingCart className="h-4 w-4" />
               {totalItems > 0 && (
                 <span className="absolute top-1 right-1 w-4 h-4 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
@@ -68,40 +78,40 @@ export function Header() {
             user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
+                  <button className="w-9 h-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold cursor-pointer hover:opacity-90 transition-opacity">
                     {user.name?.charAt(0).toUpperCase() || <User size={16} />}
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-48 z-50 animate-in fade-in-0 zoom-in-95 border-border/50">
                   <div className="px-3 py-2 text-sm">
-                    <p className="font-medium">{user.name}</p>
+                    <p className="font-semibold">{user.name}</p>
                     <p className="text-muted-foreground text-xs">{user.email}</p>
                   </div>
-                  <DropdownMenuSeparator />
+                  <DropdownMenuSeparator className="bg-border/50" />
                   {user.role === "admin" && (
-                    <DropdownMenuItem asChild>
+                    <DropdownMenuItem asChild className={`cursor-pointer focus:bg-zinc-100 dark:focus:bg-white/5 ${pathname === "/admin" ? "text-primary" : ""}`}>
                       <Link href="/admin">Dashboard</Link>
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem asChild>
+                  <DropdownMenuItem asChild className={`cursor-pointer focus:bg-zinc-100 dark:focus:bg-white/5 ${pathname === "/profile" ? "text-primary" : ""}`}>
                     <Link href="/profile">Profile</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-500 focus:text-red-600">
+                  <DropdownMenuSeparator className="bg-border/50" />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-500 hover:text-red-600 focus:text-red-600 cursor-pointer focus:bg-zinc-100 dark:focus:bg-white/5">
                     Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <div className="hidden md:flex items-center gap-4">
-                <Link href="/auth?mode=login" className="text-sm font-medium hover:text-primary transition-colors">Sign In</Link>
-                <Link href="/auth?mode=register"><Button size="sm">Sign Up</Button></Link>
+                <Link href="/auth?mode=login" className="text-sm font-semibold hover:text-primary transition-colors cursor-pointer">Sign In</Link>
+                <Link href="/auth?mode=register" className="cursor-pointer"><Button size="sm" className="cursor-pointer">Sign Up</Button></Link>
               </div>
             )
           )}
 
           {/* Mobile Menu Button */}
-          <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <Button variant="ghost" size="icon" className="md:hidden cursor-pointer hover:bg-[#FF531A] hover:text-white transition-colors" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </div>
@@ -109,21 +119,21 @@ export function Header() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-border bg-card">
+        <div className="md:hidden border-t border-border bg-background shadow-lg">
           <nav className="flex flex-col">
-            <Link href="/" className="px-4 py-3 text-sm border-b">Home</Link>
-            <Link href="/products" className="px-4 py-3 text-sm border-b">Products</Link>
-            <Link href="/services" className="px-4 py-3 text-sm border-b">Services</Link>
+            <Link href="/" className={`px-4 py-3 text-sm font-medium border-b border-border/50 ${pathname === "/" ? "text-primary" : ""}`}>Home</Link>
+            <Link href="/products" className={`px-4 py-3 text-sm font-medium border-b border-border/50 ${pathname === "/products" ? "text-primary" : ""}`}>Products</Link>
+            <Link href="/services" className={`px-4 py-3 text-sm font-medium border-b border-border/50 ${pathname === "/services" ? "text-primary" : ""}`}>Services</Link>
             {user ? (
               <>
-                {user.role === "admin" && <Link href="/admin" className="px-4 py-3 text-sm border-b">Dashboard</Link>}
-                <Link href="/profile" className="px-4 py-3 text-sm border-b">Profile</Link>
-                <button onClick={handleLogout} className="px-4 py-3 text-sm text-red-500 text-left">Logout</button>
+                {user.role === "admin" && <Link href="/admin" className={`px-4 py-3 text-sm font-medium border-b border-border/50 ${pathname === "/admin" ? "text-primary" : ""}`}>Dashboard</Link>}
+                <Link href="/profile" className={`px-4 py-3 text-sm font-medium border-b border-border/50 ${pathname === "/profile" ? "text-primary" : ""}`}>Profile</Link>
+                <button onClick={handleLogout} className="px-4 py-3 text-sm font-medium text-red-500 text-left border-b border-border/50">Logout</button>
               </>
             ) : (
               <>
-                <Link href="/auth?mode=login" className="px-4 py-3 text-sm border-b">Sign In</Link>
-                <Link href="/auth?mode=register" className="px-4 py-3 text-sm">Sign Up</Link>
+                <Link href="/auth?mode=login" className="px-4 py-3 text-sm font-medium border-b border-border/50">Sign In</Link>
+                <Link href="/auth?mode=register" className="px-4 py-3 text-sm font-medium">Sign Up</Link>
               </>
             )}
           </nav>

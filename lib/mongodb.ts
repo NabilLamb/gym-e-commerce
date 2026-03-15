@@ -13,7 +13,6 @@ if (!cached) {
 }
 
 export async function connectDB() {
-    console.log("URI:", MONGODB_URI)
     if (cached.conn) return cached.conn
 
     if (!cached.promise) {

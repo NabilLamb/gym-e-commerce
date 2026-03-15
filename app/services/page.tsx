@@ -9,7 +9,7 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronRight, Clock, MapPin, Users, Tag } from "lucide-react";
+import { ChevronRight, Clock, MapPin, Users } from "lucide-react";
 
 const CATEGORY_LABELS: Record<string, string> = {
   "personal-training": "Personal Training",
@@ -32,8 +32,8 @@ interface Service {
 }
 
 export default function ServicesPage() {
-  const [services, setServices]               = useState<Service[]>([]);
-  const [loading, setLoading]                 = useState(true);
+  const [services, setServices]                 = useState<Service[]>([]);
+  const [loading, setLoading]                   = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
 
   useEffect(() => {
@@ -57,30 +57,33 @@ export default function ServicesPage() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-background">
+      <main className="min-h-screen bg-background relative pb-24">
+        <div className="absolute top-0 right-0 w-full h-[500px] bg-gradient-to-b from-primary/5 via-background to-background -z-10" />
+
         {/* Breadcrumb */}
-        <div className="border-b border-border bg-card">
+        <div className="border-b border-border/50 bg-background/50 backdrop-blur-md sticky top-0 z-40">
           <div className="container max-w-7xl mx-auto px-4 py-4">
-            <div className="flex items-center gap-2 text-sm">
-              <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">Home</Link>
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Link href="/" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer">Home</Link>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              <span className="text-foreground font-medium">Services</span>
+              <span className="text-foreground">Services</span>
             </div>
           </div>
         </div>
 
-        {/* Header */}
-        <section className="py-12 border-b border-border">
+        {/* Page header */}
+        <section className="py-16 md:py-24 relative overflow-hidden">
+          <div className="absolute top-1/2 left-[10%] w-[30%] h-full rounded-full bg-blue-500/10 blur-[120px] -z-10" />
           <div className="container max-w-7xl mx-auto px-4">
-            <h1 className="text-4xl font-bold mb-4">Our Services</h1>
-            <p className="text-xl text-muted-foreground">
-              Professional training, coaching, and fitness services to accelerate your progress
+            <h1 className="text-5xl md:text-6xl font-extrabold mb-6 tracking-tight">Our <span className="text-primary">Services</span></h1>
+            <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl font-medium">
+              Professional training, coaching, and fitness services to accelerate your progress.
             </p>
           </div>
         </section>
 
-        {/* Services */}
-        <section className="py-12">
+        {/* Grid */}
+        <section className="py-8">
           <div className="container max-w-7xl mx-auto px-4">
 
             {/* Category filter */}
@@ -113,53 +116,66 @@ export default function ServicesPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filtered.map((service) => (
-                  <Card key={service._id} className="hover:shadow-lg transition-all hover:-translate-y-1 overflow-hidden">
-                    <CardContent className="p-0 flex flex-col h-full">
-                      {/* Image */}
-                      <div className="relative w-full h-44 bg-secondary overflow-hidden flex-shrink-0">
-                        <Image
-                          src={service.image || "/placeholder.svg"}
-                          alt={service.name}
-                          fill
-                          className="object-cover"
-                        />
-                        {/* Category badge */}
-                        <span className="absolute top-3 left-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm">
-                          {CATEGORY_LABELS[service.category] || service.category}
-                        </span>
-                      </div>
+                  /* Entire card is a link to the detail page */
+                  <Link key={service._id} href={`/services/${service._id}`} className="group block h-full">
+                    <Card className="athletic-card h-full flex flex-col rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border-border/50">
+                      <CardContent className="p-0 flex flex-col h-full relative">
 
-                      <div className="p-5 flex flex-col flex-1">
-                        <h3 className="font-semibold text-lg mb-2">{service.name}</h3>
-                        <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1">
-                          {service.description}
-                        </p>
-
-                        {/* Meta */}
-                        <div className="space-y-1.5 mb-4">
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-                            {service.duration}
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                            {service.location}
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Users className="w-3.5 h-3.5 flex-shrink-0" />
-                            {service.capacity === 1 ? "1-on-1 session" : `Up to ${service.capacity} people`}
-                          </div>
+                        {/* Image */}
+                        <div className="relative w-full h-44 bg-secondary overflow-hidden flex-shrink-0">
+                          <Image
+                            src={service.image || "/placeholder.svg"}
+                            alt={service.name}
+                            fill
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <span className="absolute top-3 left-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm">
+                            {CATEGORY_LABELS[service.category] || service.category}
+                          </span>
                         </div>
 
-                        <div className="flex items-center justify-between mt-auto">
-                          <span className="text-2xl font-bold text-primary">${service.price}</span>
-                          <Link href={`/services/booking?service=${service._id}`}>
-                            <Button size="sm">Book Now</Button>
-                          </Link>
+                        <div className="p-5 flex flex-col flex-1">
+                          <h3 className="font-semibold text-lg mb-2 group-hover:text-primary transition-colors">
+                            {service.name}
+                          </h3>
+                          <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1">
+                            {service.description}
+                          </p>
+
+                          {/* Meta */}
+                          <div className="space-y-1.5 mb-4">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+                              {service.duration}
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                              {service.location}
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Users className="w-3.5 h-3.5 flex-shrink-0" />
+                              {service.capacity === 1 ? "1-on-1 session" : `Up to ${service.capacity} people`}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between mt-auto">
+                            <span className="text-2xl font-bold text-primary">${service.price}</span>
+                            {/* Stop propagation so clicking Book Now goes straight to booking */}
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                window.location.href = `/services/booking?service=${service._id}`;
+                              }}
+                            >
+                              Book Now
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  </Link>
                 ))}
               </div>
             )}
@@ -167,17 +183,21 @@ export default function ServicesPage() {
         </section>
 
         {/* CTA */}
-        <section className="py-20 bg-card border-y border-border">
-          <div className="container max-w-7xl mx-auto px-4 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Get Started Today</h2>
-            <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
-              Our expert trainers are ready to help you reach your goals.
+        <section className="py-24 relative overflow-hidden border-y border-border/50 bg-secondary/20">
+          <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
+          <div className="container max-w-7xl mx-auto px-4 text-center relative z-10">
+            <h2 className="text-4xl md:text-5xl font-extrabold mb-6 tracking-tight">Ready to <span className="text-primary">Transform?</span></h2>
+            <p className="text-xl text-muted-foreground mb-10 max-w-xl mx-auto font-medium">
+              Join our expert trainers today. Elevate your performance.
             </p>
             <Link href="/services/booking">
-              <Button size="lg">Schedule Your Session</Button>
+              <Button size="lg" className="h-16 px-10 text-xl font-bold rounded-full shadow-lg hover:scale-105 transition-all w-full sm:w-auto">
+                Schedule Your Session
+              </Button>
             </Link>
           </div>
         </section>
+
       </main>
       <Footer />
     </>
