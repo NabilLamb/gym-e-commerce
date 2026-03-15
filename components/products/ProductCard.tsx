@@ -17,22 +17,29 @@ interface Product {
   images: string[];
   category: string;
   description?: string;
-  averageRating?: number; // fixed: was "rating"
-  numReviews?: number;    // fixed: was "reviews"
+  averageRating?: number;
+  numReviews?: number;
 }
 
 export function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
   const { toast } = useToast();
 
-  // Fix: use first image from array
   const mainImage = product.images?.[0] || "/placeholder.svg";
 
+  // Calculate discount percentage — same logic as FeaturedProducts
+  const discount =
+    product.originalPrice && product.originalPrice > product.price
+      ? Math.round(
+          ((product.originalPrice - product.price) / product.originalPrice) * 100
+        )
+      : null;
+
+  const hasReviews = product.numReviews && product.numReviews > 0;
+
   const handleAddToCart = (e: React.MouseEvent) => {
-    // Prevent card click (Link navigation) when clicking the button
     e.preventDefault();
     e.stopPropagation();
-
     addItem({
       id: product._id,
       name: product.name,
@@ -46,22 +53,22 @@ export function ProductCard({ product }: { product: Product }) {
     });
   };
 
-          const hasReviews = product.numReviews && product.numReviews > 0;
-
   return (
     <Link href={`/products/${product._id}`} className="group block h-full">
       <div className="athletic-card h-full flex flex-col rounded-2xl">
+
         {/* Image */}
-        <div className="relative h-52 w-full bg-zinc-100 dark:bg-zinc-900 overflow-hidden">
+        <div className="relative h-52 w-full bg-zinc-100 dark:bg-zinc-900 overflow-hidden rounded-t-2xl">
           <Image
             src={mainImage}
             alt={product.name}
             fill
             className="object-contain group-hover:scale-105 transition-transform duration-300"
           />
-          {product.originalPrice && (
-            <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs font-bold px-2 py-1 rounded">
-              SALE
+          {/* Discount badge — consistent with FeaturedProducts */}
+          {discount && (
+            <span className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs font-bold px-2 py-1 rounded-full">
+              -{discount}%
             </span>
           )}
         </div>
@@ -71,7 +78,7 @@ export function ProductCard({ product }: { product: Product }) {
           <p className="text-xs text-muted-foreground capitalize mb-1">
             {product.category}
           </p>
-          <h3 className="font-semibold text-base leading-tight mb-1 line-clamp-2">
+          <h3 className="font-semibold text-base leading-tight mb-1 line-clamp-2 group-hover:text-primary transition-colors">
             {product.name}
           </h3>
 
@@ -119,8 +126,17 @@ export function ProductCard({ product }: { product: Product }) {
                   ${product.originalPrice.toFixed(2)}
                 </span>
               )}
+              {discount && (
+                <span className="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                  Save {discount}%
+                </span>
+              )}
             </div>
-            <Button onClick={handleAddToCart} className="w-full" size="sm">
+            <Button
+              onClick={handleAddToCart}
+              className="w-full cursor-pointer"
+              size="sm"
+            >
               <ShoppingCart className="w-4 h-4 mr-2" />
               Add to Cart
             </Button>
