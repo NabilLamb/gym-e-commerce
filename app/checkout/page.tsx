@@ -59,7 +59,7 @@ export default function CheckoutPage() {
   // Redirect if not logged in
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push("/auth?callbackUrl=/checkout");
+      router.push("/auth?mode=login&callbackUrl=/checkout");
     }
   }, [user, authLoading, router]);
 

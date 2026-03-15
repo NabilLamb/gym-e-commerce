@@ -1,12 +1,6 @@
-/* app\globals.css */
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
 
 @layer utilities {
   .text-balance {
@@ -98,7 +92,7 @@ body {
   }
 
   body {
-    @apply bg-background text-foreground transition-colors duration-300;
+    @apply bg-background text-foreground font-sans transition-colors duration-300;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -113,26 +107,21 @@ body {
     @apply transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-sm;
   }
 
-  a:hover {
-    @apply text-primary opacity-80;
+  /* Scoped: only apply hover/visited to plain text links, not nav or button-links */
+  main a:not([class*="btn"]):not([class*="Button"]):hover {
+    @apply text-primary;
   }
 
-  a:visited {
-    @apply text-primary/80;
-  }
-
-  /* Remove visited styling from buttons disguised as links if needed via class overrides */
-  a.no-visited:visited {
-    @apply text-inherit;
+  main a:visited:not([class]):not([class*="Button"]) {
+    @apply text-primary/70;
   }
 }
 
-/* Global utility for card hover states */
 @layer components {
   .athletic-card {
     @apply bg-card border border-border/50 rounded-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/10 hover:border-primary/20 backdrop-blur-sm relative overflow-hidden;
   }
-  
+
   .athletic-btn-active {
     @apply active:scale-95 transition-transform;
   }

@@ -51,12 +51,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     })
-    
+
     const data = await res.json()
-    
     if (!res.ok) throw new Error(data.message)
-    
-    // Set user directly from the login response for better performance
+
     if (data.success && data.user) {
       setUser(data.user)
     } else {
@@ -70,23 +68,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password }),
     })
-    
+
     const data = await res.json()
     if (!res.ok) throw new Error(data.message)
-    
-    // Auto-login after registration
+
     await login(email, password)
   }
 
   const logout = async () => {
+    // 1. Call the logout API to clear the httpOnly cookie
     await fetch("/api/auth/logout", { method: "POST" })
+
+    // 2. Clear user state
     setUser(null)
+
+    // 3. Clear cart from localStorage so it doesn't reload on next mount
+    localStorage.removeItem("cart")
+
+    // 4. Dispatch a custom event so CartContext clears its in-memory state immediately
+    window.dispatchEvent(new Event("auth:logout"))
   }
 
-  // Using React.createElement to avoid "Cannot find namespace" errors in some TS configs
   return React.createElement(
-    AuthContext.Provider, 
-    { value: { user, loading, login, register, logout, refreshUser } }, 
+    AuthContext.Provider,
+    { value: { user, loading, login, register, logout, refreshUser } },
     children
   )
 }

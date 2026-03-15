@@ -78,6 +78,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined)
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, initialState)
 
+  // Load cart from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem("cart")
     if (saved) {
@@ -89,9 +90,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  // Sync cart to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(state.items))
   }, [state.items])
+
+  // Listen for logout event and clear cart immediately
+  useEffect(() => {
+    const handleLogout = () => {
+      dispatch({ type: "CLEAR_CART" })
+    }
+    window.addEventListener("auth:logout", handleLogout)
+    return () => window.removeEventListener("auth:logout", handleLogout)
+  }, [])
 
   const addItem = (item: CartItem) => dispatch({ type: "ADD_ITEM", payload: item })
   const removeItem = (id: string) => dispatch({ type: "REMOVE_ITEM", payload: { id } })
@@ -102,7 +113,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const totalItems = state.items.reduce((sum, item) => sum + item.quantity, 0)
   const totalPrice = state.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
-  // Use React.createElement to fix the "Cannot find namespace" error
   return React.createElement(
     CartContext.Provider,
     {
