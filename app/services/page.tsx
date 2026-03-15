@@ -1,10 +1,10 @@
 // app/services/page.tsx
-
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ interface Service {
 }
 
 export default function ServicesPage() {
+  const router = useRouter();
   const [services, setServices]                 = useState<Service[]>([]);
   const [loading, setLoading]                   = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -64,7 +65,12 @@ export default function ServicesPage() {
         <div className="border-b border-border/50 bg-background/50 backdrop-blur-md sticky top-0 z-40">
           <div className="container max-w-7xl mx-auto px-4 py-4">
             <div className="flex items-center gap-2 text-sm font-medium">
-              <Link href="/" className="text-muted-foreground hover:text-primary transition-colors cursor-pointer">Home</Link>
+              <Link
+                href="/"
+                className="text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+              >
+                Home
+              </Link>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
               <span className="text-foreground">Services</span>
             </div>
@@ -75,7 +81,9 @@ export default function ServicesPage() {
         <section className="py-16 md:py-24 relative overflow-hidden">
           <div className="absolute top-1/2 left-[10%] w-[30%] h-full rounded-full bg-blue-500/10 blur-[120px] -z-10" />
           <div className="container max-w-7xl mx-auto px-4">
-            <h1 className="text-5xl md:text-6xl font-extrabold mb-6 tracking-tight">Our <span className="text-primary">Services</span></h1>
+            <h1 className="text-5xl md:text-6xl font-extrabold mb-6 tracking-tight">
+              Our <span className="text-primary">Services</span>
+            </h1>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl font-medium">
               Professional training, coaching, and fitness services to accelerate your progress.
             </p>
@@ -93,7 +101,7 @@ export default function ServicesPage() {
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors border ${
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors border cursor-pointer ${
                       selectedCategory === cat
                         ? "bg-primary text-primary-foreground border-primary"
                         : "border-border text-muted-foreground hover:border-primary hover:text-foreground"
@@ -108,16 +116,24 @@ export default function ServicesPage() {
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="rounded-xl border border-border h-80 animate-pulse bg-secondary" />
+                  <div
+                    key={i}
+                    className="rounded-xl border border-border h-80 animate-pulse bg-secondary"
+                  />
                 ))}
               </div>
             ) : filtered.length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground">No services available yet.</div>
+              <div className="text-center py-16 text-muted-foreground">
+                No services available yet.
+              </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filtered.map((service) => (
-                  /* Entire card is a link to the detail page */
-                  <Link key={service._id} href={`/services/${service._id}`} className="group block h-full">
+                  <Link
+                    key={service._id}
+                    href={`/services/${service._id}`}
+                    className="group block h-full"
+                  >
                     <Card className="athletic-card h-full flex flex-col rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-2 transition-all duration-300 border-border/50">
                       <CardContent className="p-0 flex flex-col h-full relative">
 
@@ -155,18 +171,24 @@ export default function ServicesPage() {
                             </div>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                               <Users className="w-3.5 h-3.5 flex-shrink-0" />
-                              {service.capacity === 1 ? "1-on-1 session" : `Up to ${service.capacity} people`}
+                              {service.capacity === 1
+                                ? "1-on-1 session"
+                                : `Up to ${service.capacity} people`}
                             </div>
                           </div>
 
                           <div className="flex items-center justify-between mt-auto">
-                            <span className="text-2xl font-bold text-primary">${service.price}</span>
-                            {/* Stop propagation so clicking Book Now goes straight to booking */}
+                            <span className="text-2xl font-bold text-primary">
+                              ${service.price}
+                            </span>
                             <Button
                               size="sm"
                               onClick={(e) => {
                                 e.preventDefault();
-                                window.location.href = `/services/booking?service=${service._id}`;
+                                e.stopPropagation();
+                                router.push(
+                                  `/services/booking?service=${service._id}`
+                                );
                               }}
                             >
                               Book Now
@@ -186,18 +208,22 @@ export default function ServicesPage() {
         <section className="py-24 relative overflow-hidden border-y border-border/50 bg-secondary/20">
           <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
           <div className="container max-w-7xl mx-auto px-4 text-center relative z-10">
-            <h2 className="text-4xl md:text-5xl font-extrabold mb-6 tracking-tight">Ready to <span className="text-primary">Transform?</span></h2>
+            <h2 className="text-4xl md:text-5xl font-extrabold mb-6 tracking-tight">
+              Ready to <span className="text-primary">Transform?</span>
+            </h2>
             <p className="text-xl text-muted-foreground mb-10 max-w-xl mx-auto font-medium">
               Join our expert trainers today. Elevate your performance.
             </p>
             <Link href="/services/booking">
-              <Button size="lg" className="h-16 px-10 text-xl font-bold rounded-full shadow-lg hover:scale-105 transition-all w-full sm:w-auto">
+              <Button
+                size="lg"
+                className="h-16 px-10 text-xl font-bold rounded-full shadow-lg hover:scale-105 transition-all w-full sm:w-auto cursor-pointer"
+              >
                 Schedule Your Session
               </Button>
             </Link>
           </div>
         </section>
-
       </main>
       <Footer />
     </>

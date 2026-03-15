@@ -4,6 +4,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Clock, MapPin } from "lucide-react";
@@ -21,6 +22,8 @@ interface ServiceCardProps {
 }
 
 export function ServiceCard({ service }: ServiceCardProps) {
+  const router = useRouter();
+
   return (
     <Link href={`/services/${service._id}`} className="group block">
       <Card className="hover:shadow-lg transition-all hover:-translate-y-1 overflow-hidden h-full">
@@ -53,12 +56,15 @@ export function ServiceCard({ service }: ServiceCardProps) {
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold text-primary">${service.price}</span>
+              <span className="text-2xl font-bold text-primary">
+                ${service.price}
+              </span>
               <Button
                 size="sm"
                 onClick={(e) => {
                   e.preventDefault();
-                  window.location.href = `/services/booking?service=${service._id}`;
+                  e.stopPropagation();
+                  router.push(`/services/booking?service=${service._id}`);
                 }}
               >
                 Book Now
