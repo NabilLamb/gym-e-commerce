@@ -20,7 +20,7 @@ import { AdminListRow } from "@/components/admin/AdminListRow";
 import { ChevronRight, Plus, Edit, BarChart3, ShoppingBag, Eye, ToggleLeft, ToggleRight } from "lucide-react";
 
 const BOOKING_STATUS_COLORS: Record<string, string> = {
-  pending:   "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+  pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
   confirmed: "bg-blue-500/10 text-blue-500 border-blue-500/20",
   completed: "bg-green-500/10 text-green-500 border-green-500/20",
   cancelled: "bg-red-500/10 text-red-500 border-red-500/20",
@@ -28,19 +28,19 @@ const BOOKING_STATUS_COLORS: Record<string, string> = {
 };
 
 const ORDER_STATUS_COLORS: Record<string, string> = {
-  pending:    "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+  pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
   processing: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-  shipped:    "bg-purple-500/10 text-purple-500 border-purple-500/20",
-  delivered:  "bg-green-500/10 text-green-500 border-green-500/20",
-  cancelled:  "bg-red-500/10 text-red-500 border-red-500/20",
+  shipped: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+  delivered: "bg-green-500/10 text-green-500 border-green-500/20",
+  cancelled: "bg-red-500/10 text-red-500 border-red-500/20",
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
   "personal-training": "Personal Training",
-  "group-class":       "Group Class",
-  "facility-access":   "Facility Access",
-  "assessment":        "Assessment",
-  "online-coaching":   "Online Coaching",
+  "group-class": "Group Class",
+  "facility-access": "Facility Access",
+  "assessment": "Assessment",
+  "online-coaching": "Online Coaching",
 };
 
 export default function AdminPage() {
@@ -54,20 +54,20 @@ export default function AdminPage() {
 function AdminDashboardContent() {
   const searchParams = useSearchParams();
   const defaultTab = searchParams.get("tab") || "products";
-  
+
   const { toast } = useToast();
   const [products, setProducts] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
-  const [orders,   setOrders  ] = useState<any[]>([]);
-  const [loading,  setLoading ] = useState(true);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchAll = async () => {
     const [p, s, b, o] = await Promise.all([
       fetch("/api/products?all=true", { credentials: "include" }).then((r) => r.json()), // ← fixed
       fetch("/api/services?all=true", { credentials: "include" }).then((r) => r.json()),
       fetch("/api/bookings", { credentials: "include" }).then((r) => r.ok ? r.json() : []),
-      fetch("/api/orders",   { credentials: "include" }).then((r) => r.ok ? r.json() : []),
+      fetch("/api/orders", { credentials: "include" }).then((r) => r.ok ? r.json() : []),
     ]);
     setProducts(Array.isArray(p) ? p : []);
     setServices(Array.isArray(s) ? s : []);
@@ -160,8 +160,8 @@ function AdminDashboardContent() {
 
   // ── Stats ──────────────────────────────────────────────────────
   const activeBookings = bookings.filter((b) => ["pending", "confirmed"].includes(b.status)).length;
-  const activeOrders   = orders.filter((o) => ["pending", "processing", "shipped"].includes(o.status)).length;
-  const totalRevenue   = orders
+  const activeOrders = orders.filter((o) => ["pending", "processing", "shipped"].includes(o.status)).length;
+  const totalRevenue = orders
     .filter((o) => o.status !== "cancelled")
     .reduce((sum, o) => sum + (o.total || 0), 0);
 
@@ -185,11 +185,28 @@ function AdminDashboardContent() {
             <h1 className="text-5xl md:text-6xl font-extrabold mb-10 tracking-tight">Admin <span className="text-red-500">Dashboard</span></h1>
 
             {/* Stats */}
+            {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
-              <StatCard title="Total Revenue"  value={`$${totalRevenue.toFixed(2)}`} />
-              <StatCard title="Total Orders"   value={orders.length.toString()} />
-              <StatCard title="Total Bookings" value={bookings.length.toString()} />
-              <StatCard title="Total Products" value={products.length.toString()} />
+              <StatCard
+                title="Total Revenue"
+                value={`$${totalRevenue.toFixed(2)}`}
+                loading={loading}
+              />
+              <StatCard
+                title="Total Orders"
+                value={orders.length.toString()}
+                loading={loading}
+              />
+              <StatCard
+                title="Total Bookings"
+                value={bookings.length.toString()}
+                loading={loading}
+              />
+              <StatCard
+                title="Total Products"
+                value={products.length.toString()}
+                loading={loading}
+              />
             </div>
 
             <Tabs defaultValue={defaultTab} className="w-full">
@@ -222,26 +239,33 @@ function AdminDashboardContent() {
                     <Button><Plus className="w-4 h-4 mr-2" />Add Product</Button>
                   </Link>
                 </div>
-                {loading ? <p className="text-muted-foreground">Loading...</p>
+                {loading ? <div className="space-y-4">
+                  {[...Array(4)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-20 rounded-xl bg-card/50 border border-border/50 animate-pulse"
+                    />
+                  ))}
+                </div>
                   : products.length === 0 ? <p className="text-muted-foreground">No products yet.</p>
-                  : (
-                    <div className="space-y-4">
-                      {products.map((p) => (
-                        <AdminListRow
-                          key={p._id}
-                          id={p._id.toString()}
-                          name={p.name}
-                          metadata={`${p.category.charAt(0).toUpperCase() + p.category.slice(1)} — $${p.price.toFixed(2)}`}
-                          isActive={p.isActive !== false}
-                          hasToggle={true}
-                          editUrl={`/admin/products/edit/${p._id}`}
-                          viewUrl={`/products/${p._id}?from=dashboard&tab=products`}
-                          onDelete={handleDeleteProduct}
-                          onToggleActive={() => handleToggleProduct(p)}
-                        />
-                      ))}
-                    </div>
-                  )}
+                    : (
+                      <div className="space-y-4">
+                        {products.map((p) => (
+                          <AdminListRow
+                            key={p._id}
+                            id={p._id.toString()}
+                            name={p.name}
+                            metadata={`${p.category.charAt(0).toUpperCase() + p.category.slice(1)} — $${p.price.toFixed(2)}`}
+                            isActive={p.isActive !== false}
+                            hasToggle={true}
+                            editUrl={`/admin/products/edit/${p._id}`}
+                            viewUrl={`/products/${p._id}?from=dashboard&tab=products`}
+                            onDelete={handleDeleteProduct}
+                            onToggleActive={() => handleToggleProduct(p)}
+                          />
+                        ))}
+                      </div>
+                    )}
               </TabsContent>
 
               {/* ── Services ── */}
@@ -252,26 +276,33 @@ function AdminDashboardContent() {
                     <Button><Plus className="w-4 h-4 mr-2" />Add Service</Button>
                   </Link>
                 </div>
-                {loading ? <p className="text-muted-foreground">Loading...</p>
+                {loading ? <div className="space-y-4">
+                  {[...Array(4)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-20 rounded-xl bg-card/50 border border-border/50 animate-pulse"
+                    />
+                  ))}
+                </div>
                   : services.length === 0 ? <p className="text-muted-foreground">No services yet.</p>
-                  : (
-                    <div className="space-y-4">
-                      {services.map((s) => (
-                        <AdminListRow
-                          key={s._id}
-                          id={s._id.toString()}
-                          name={s.name}
-                          metadata={`${CATEGORY_LABELS[s.category] || s.category} — $${s.price} · ${s.duration} · ${s.location}`}
-                          isActive={s.isActive !== false}
-                          hasToggle={true}
-                          editUrl={`/admin/services/edit/${s._id}`}
-                          viewUrl={`/services/${s._id}?from=dashboard&tab=services`}
-                          onDelete={handleDeleteService}
-                          onToggleActive={() => handleToggleService(s)}
-                        />
-                      ))}
-                    </div>
-                  )}
+                    : (
+                      <div className="space-y-4">
+                        {services.map((s) => (
+                          <AdminListRow
+                            key={s._id}
+                            id={s._id.toString()}
+                            name={s.name}
+                            metadata={`${CATEGORY_LABELS[s.category] || s.category} — $${s.price} · ${s.duration} · ${s.location}`}
+                            isActive={s.isActive !== false}
+                            hasToggle={true}
+                            editUrl={`/admin/services/edit/${s._id}`}
+                            viewUrl={`/services/${s._id}?from=dashboard&tab=services`}
+                            onDelete={handleDeleteService}
+                            onToggleActive={() => handleToggleService(s)}
+                          />
+                        ))}
+                      </div>
+                    )}
               </TabsContent>
 
               {/* ── Orders ── */}
@@ -282,66 +313,73 @@ function AdminDashboardContent() {
                     {orders.length} total · {activeOrders} active
                   </p>
                 </div>
-                {loading ? <p className="text-muted-foreground">Loading...</p>
+                {loading ? <div className="space-y-4">
+                  {[...Array(4)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-20 rounded-xl bg-card/50 border border-border/50 animate-pulse"
+                    />
+                  ))}
+                </div>
                   : orders.length === 0 ? <p className="text-muted-foreground">No orders yet.</p>
-                  : (
-                    <div className="space-y-4">
-                      {orders.map((o) => (
-                        <Card key={o._id} className="athletic-card border-border/50 overflow-hidden hover:border-primary/50 transition-colors">
-                          <CardContent className="p-5">
-                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
-                              <div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <p className="font-bold text-primary">{o.orderNumber}</p>
-                                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${ORDER_STATUS_COLORS[o.status] || ""}`}>
-                                    {o.status}
-                                  </span>
-                                </div>
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                  {o.shippingAddress?.fullName} ·{" "}
-                                  {new Date(o.createdAt).toLocaleDateString("en-US", {
-                                    month: "short", day: "numeric", year: "numeric",
-                                  })}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {o.shippingAddress?.address}, {o.shippingAddress?.city}, {o.shippingAddress?.country}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                <p className="font-bold text-primary mr-2">${o.total?.toFixed(2)}</p>
-                                <Select value={o.status} onValueChange={(v) => handleOrderStatus(o._id, v)}>
-                                  <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="pending">Pending</SelectItem>
-                                    <SelectItem value="processing">Processing</SelectItem>
-                                    <SelectItem value="shipped">Shipped</SelectItem>
-                                    <SelectItem value="delivered">Delivered</SelectItem>
-                                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <DeleteButton id={o._id} onDelete={handleDeleteOrder} />
-                              </div>
-                            </div>
-                            <div className="border-t border-border pt-3 space-y-2">
-                              {o.items?.map((item: any, i: number) => (
-                                <div key={i} className="flex items-center gap-3">
-                                  <div className="relative w-9 h-9 rounded-md overflow-hidden bg-secondary flex-shrink-0">
-                                    {item.image
-                                      ? <Image src={item.image} alt={item.name} fill className="object-cover" />
-                                      : <ShoppingBag className="w-4 h-4 text-muted-foreground m-auto mt-2.5" />}
+                    : (
+                      <div className="space-y-4">
+                        {orders.map((o) => (
+                          <Card key={o._id} className="athletic-card border-border/50 overflow-hidden hover:border-primary/50 transition-colors">
+                            <CardContent className="p-5">
+                              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
+                                <div>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="font-bold text-primary">{o.orderNumber}</p>
+                                    <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${ORDER_STATUS_COLORS[o.status] || ""}`}>
+                                      {o.status}
+                                    </span>
                                   </div>
-                                  <p className="text-sm flex-1 text-muted-foreground">
-                                    {item.name} <span className="text-foreground font-medium">×{item.quantity}</span>
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    {o.shippingAddress?.fullName} ·{" "}
+                                    {new Date(o.createdAt).toLocaleDateString("en-US", {
+                                      month: "short", day: "numeric", year: "numeric",
+                                    })}
                                   </p>
-                                  <p className="text-sm font-medium">${(item.price * item.quantity).toFixed(2)}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {o.shippingAddress?.address}, {o.shippingAddress?.city}, {o.shippingAddress?.country}
+                                  </p>
                                 </div>
-                              ))}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                  <p className="font-bold text-primary mr-2">${o.total?.toFixed(2)}</p>
+                                  <Select value={o.status} onValueChange={(v) => handleOrderStatus(o._id, v)}>
+                                    <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="pending">Pending</SelectItem>
+                                      <SelectItem value="processing">Processing</SelectItem>
+                                      <SelectItem value="shipped">Shipped</SelectItem>
+                                      <SelectItem value="delivered">Delivered</SelectItem>
+                                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <DeleteButton id={o._id} onDelete={handleDeleteOrder} />
+                                </div>
+                              </div>
+                              <div className="border-t border-border pt-3 space-y-2">
+                                {o.items?.map((item: any, i: number) => (
+                                  <div key={i} className="flex items-center gap-3">
+                                    <div className="relative w-9 h-9 rounded-md overflow-hidden bg-secondary flex-shrink-0">
+                                      {item.image
+                                        ? <Image src={item.image} alt={item.name} fill className="object-cover" />
+                                        : <ShoppingBag className="w-4 h-4 text-muted-foreground m-auto mt-2.5" />}
+                                    </div>
+                                    <p className="text-sm flex-1 text-muted-foreground">
+                                      {item.name} <span className="text-foreground font-medium">×{item.quantity}</span>
+                                    </p>
+                                    <p className="text-sm font-medium">${(item.price * item.quantity).toFixed(2)}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
               </TabsContent>
 
               {/* ── Bookings ── */}
@@ -352,51 +390,58 @@ function AdminDashboardContent() {
                     {bookings.length} total · {activeBookings} active
                   </p>
                 </div>
-                {loading ? <p className="text-muted-foreground">Loading...</p>
+                {loading ? <div className="space-y-4">
+                  {[...Array(4)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-20 rounded-xl bg-card/50 border border-border/50 animate-pulse"
+                    />
+                  ))}
+                </div>
                   : bookings.length === 0 ? <p className="text-muted-foreground">No bookings yet.</p>
-                  : (
-                    <div className="space-y-4">
-                      {bookings.map((b) => (
-                        <Card key={b._id} className="athletic-card border-border/50 overflow-hidden hover:border-primary/50 transition-colors">
-                          <CardContent className="p-5 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap mb-1">
-                                <p className="font-semibold">{b.fullName}</p>
-                                <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${BOOKING_STATUS_COLORS[b.status] || ""}`}>
-                                  {b.status}
-                                </span>
-                                <span className="text-xs font-mono bg-secondary px-2 py-0.5 rounded">
-                                  {b.checkInCode}
-                                </span>
+                    : (
+                      <div className="space-y-4">
+                        {bookings.map((b) => (
+                          <Card key={b._id} className="athletic-card border-border/50 overflow-hidden hover:border-primary/50 transition-colors">
+                            <CardContent className="p-5 flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                  <p className="font-semibold">{b.fullName}</p>
+                                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${BOOKING_STATUS_COLORS[b.status] || ""}`}>
+                                    {b.status}
+                                  </span>
+                                  <span className="text-xs font-mono bg-secondary px-2 py-0.5 rounded">
+                                    {b.checkInCode}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                  {b.serviceName} —{" "}
+                                  {new Date(b.date).toLocaleDateString("en-US", {
+                                    weekday: "short", month: "short", day: "numeric",
+                                  })}{" "}
+                                  at {b.time}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5">{b.email} · {b.phone}</p>
+                                {b.notes && <p className="text-xs text-muted-foreground italic mt-1">"{b.notes}"</p>}
                               </div>
-                              <p className="text-sm text-muted-foreground">
-                                {b.serviceName} —{" "}
-                                {new Date(b.date).toLocaleDateString("en-US", {
-                                  weekday: "short", month: "short", day: "numeric",
-                                })}{" "}
-                                at {b.time}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-0.5">{b.email} · {b.phone}</p>
-                              {b.notes && <p className="text-xs text-muted-foreground italic mt-1">"{b.notes}"</p>}
-                            </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <Select value={b.status} onValueChange={(v) => handleBookingStatus(b._id, v)}>
-                                <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="pending">Pending</SelectItem>
-                                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                                  <SelectItem value="completed">Completed</SelectItem>
-                                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                                  <SelectItem value="no-show">No-show</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <DeleteButton id={b._id} onDelete={handleDeleteBooking} />
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <Select value={b.status} onValueChange={(v) => handleBookingStatus(b._id, v)}>
+                                  <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="pending">Pending</SelectItem>
+                                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                                    <SelectItem value="completed">Completed</SelectItem>
+                                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                                    <SelectItem value="no-show">No-show</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <DeleteButton id={b._id} onDelete={handleDeleteBooking} />
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
               </TabsContent>
             </Tabs>
           </div>
@@ -407,14 +452,44 @@ function AdminDashboardContent() {
   );
 }
 
-function StatCard({ title, value }: { title: string; value: string }) {
+function StatCard({
+  title,
+  value,
+  loading = false,
+}: {
+  title: string;
+  value: string;
+  loading?: boolean;
+}) {
+  if (loading) {
+    return (
+      <Card className="athletic-card border-border/50">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-3 flex-1">
+              <div className="h-3 w-24 bg-secondary animate-pulse rounded-full" />
+              <div className="h-9 w-32 bg-secondary animate-pulse rounded-lg" />
+            </div>
+            <div className="p-4 bg-secondary animate-pulse rounded-2xl ml-4">
+              <div className="w-8 h-8" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="athletic-card border-border/50 hover:-translate-y-1 transition-transform duration-300">
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">{title}</p>
-            <p className="text-4xl font-extrabold tracking-tight text-foreground">{value}</p>
+            <p className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">
+              {title}
+            </p>
+            <p className="text-4xl font-extrabold tracking-tight text-foreground">
+              {value}
+            </p>
           </div>
           <div className="p-4 bg-primary/10 rounded-2xl">
             <BarChart3 className="w-8 h-8 text-primary" />
