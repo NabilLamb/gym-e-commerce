@@ -85,7 +85,7 @@ export default function ServiceDetailPage() {
         description: "Please sign in to book a service.",
         variant: "destructive",
       });
-      router.push("/auth/signin");
+      router.push(`/auth?mode=login&callbackUrl=/services/booking?service=${id}`);
       return;
     }
     router.push(`/services/booking?service=${id}`);
