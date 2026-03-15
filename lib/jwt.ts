@@ -1,3 +1,5 @@
+//lib\jwt.ts
+
 import { SignJWT, jwtVerify } from 'jose'
 
 // 1. Get the secret from environment variables

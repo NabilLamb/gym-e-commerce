@@ -1,3 +1,5 @@
+//lib\getCurrentUser.ts
+
 import { cookies } from "next/headers";
 import { verifyToken } from "./jwt";
 import User from "@/models/User";

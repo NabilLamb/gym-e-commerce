@@ -1,3 +1,5 @@
+//app\admin\products\edit\[id]\page.tsx
+
 import { notFound } from "next/navigation";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";

@@ -1,3 +1,5 @@
+//components\footer.tsx
+
 import Link from 'next/link'
 import { Facebook, Instagram, Twitter, Linkedin, ArrowRight } from 'lucide-react'
 

@@ -1,3 +1,5 @@
+//app\admin\products\add\page.tsx
+
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { ProductForm } from "@/components/admin/ProductForm";

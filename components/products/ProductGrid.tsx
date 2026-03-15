@@ -1,3 +1,5 @@
+//components\products\ProductGrid.tsx
+
 "use client";
 
 import { ProductCard } from "./ProductCard";
