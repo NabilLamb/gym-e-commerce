@@ -1,0 +1,19 @@
+# robots.txt for FitHub
+# https://www.robotstxt.org/robotstxt.html
+
+User-agent: *
+Allow: /
+
+# Block admin routes from being indexed
+Disallow: /admin/
+Disallow: /api/
+Disallow: /checkout/
+Disallow: /cart/
+Disallow: /profile/
+
+# Allow important public pages
+Allow: /products/
+Allow: /services/
+Allow: /auth/
+
+Sitemap: https://your-domain.com/sitemap.xml
