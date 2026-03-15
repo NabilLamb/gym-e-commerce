@@ -1,19 +1,11 @@
-// app/products/[id]/page.tsx
-// Server component — handles metadata only, renders client component
-
 import type { Metadata } from "next";
 import { connectDB } from "@/lib/mongodb";
 import Product from "@/models/Product";
-import { ProductDetailClient } from "./ProductDetailClient";
 
-export async function generateMetadata(
-  { params }: { params: Promise<{ id: string }> }
-): Promise<Metadata> {
+export async function generateProductMetadata(id: string): Promise<Metadata> {
   try {
-    const { id } = await params;
     await connectDB();
     const product = await Product.findById(id).lean() as any;
-
     if (!product) return { title: "Product Not Found" };
 
     return {
@@ -28,11 +20,4 @@ export async function generateMetadata(
   } catch {
     return { title: "Product" };
   }
-}
-
-export default async function ProductDetailPage(
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  return <ProductDetailClient id={id} />;
 }
