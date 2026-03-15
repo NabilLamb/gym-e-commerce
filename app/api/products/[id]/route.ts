@@ -1,4 +1,5 @@
 //app\api\products\[id]\route.ts
+
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Product from "@/models/Product";
@@ -18,7 +19,7 @@ export async function GET(
   }
 
   // Block inactive products from non-admin users
-  if (!product.isActive) {
+  if (product.isActive === false) {
     const user = await getCurrentUser();
     if (!user || user.role !== "admin") {
       return NextResponse.json({ message: "Not found" }, { status: 404 });

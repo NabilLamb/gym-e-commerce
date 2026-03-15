@@ -14,7 +14,7 @@ export async function GET(req: Request) {
     {
       $match: {
         stock: { $gt: 0 },
-        isActive: true, // ← add this line
+        isActive: { $ne: false }, // ← same fix: exclude only explicitly false
       },
     },
     {

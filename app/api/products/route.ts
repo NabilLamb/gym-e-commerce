@@ -5,14 +5,12 @@ import { connectDB } from "@/lib/mongodb";
 import Product from "@/models/Product";
 import { getCurrentUser } from "@/lib/getCurrentUser";
 
-// GET — public: only active products | admin: all products
 export async function GET(req: Request) {
   await connectDB();
 
   const { searchParams } = new URL(req.url);
   const showAll = searchParams.get("all") === "true";
 
-  // Only admins can see inactive products
   if (showAll) {
     const user = await getCurrentUser();
     if (user?.role === "admin") {
@@ -21,8 +19,11 @@ export async function GET(req: Request) {
     }
   }
 
-  // Everyone else: only active products
-  const products = await Product.find({ isActive: true }).sort({ createdAt: -1 });
+  // isActive: true OR isActive field doesn't exist yet (legacy products)
+  const products = await Product.find({
+    isActive: { $ne: false },
+  }).sort({ createdAt: -1 });
+
   return NextResponse.json(products);
 }
 
