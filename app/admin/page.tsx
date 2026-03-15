@@ -64,8 +64,7 @@ function AdminDashboardContent() {
 
   const fetchAll = async () => {
     const [p, s, b, o] = await Promise.all([
-      fetch("/api/products").then((r) => r.json()),
-      // Admin fetches ALL services including inactive
+      fetch("/api/products?all=true", { credentials: "include" }).then((r) => r.json()), // ← fixed
       fetch("/api/services?all=true", { credentials: "include" }).then((r) => r.json()),
       fetch("/api/bookings", { credentials: "include" }).then((r) => r.ok ? r.json() : []),
       fetch("/api/orders",   { credentials: "include" }).then((r) => r.ok ? r.json() : []),

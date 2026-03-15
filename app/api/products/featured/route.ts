@@ -10,21 +10,18 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const limit = parseInt(searchParams.get("limit") || "6");
 
-  // Weighted score: reviews × rating + sales boost
-  // Uses MongoDB aggregation to compute score server-side
   const products = await Product.aggregate([
     {
       $match: {
-        stock: { $gt: 0 }, // only in-stock products
+        stock: { $gt: 0 },
+        isActive: true, // ← add this line
       },
     },
     {
       $addFields: {
         score: {
           $add: [
-            // Review score: numReviews × averageRating (max contribution ~500 for 100 reviews at 5★)
             { $multiply: ["$numReviews", "$averageRating"] },
-            // Sales boost: totalSold × 0.5 (safe fallback to 0 if field doesn't exist yet)
             { $multiply: [{ $ifNull: ["$totalSold", 0] }, 0.5] },
           ],
         },
