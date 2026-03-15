@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
+import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
 import { ProductForm } from "@/components/admin/ProductForm";
-import { connectDB } from "@/lib/mongodb"
+import { connectDB } from "@/lib/mongodb";
 import Product from "@/models/Product";
 
 // Next.js 15: params is a Promise, must be awaited
@@ -19,5 +21,13 @@ export default async function EditProductPage({
   // Convert MongoDB _id and dates to plain strings for the client component
   const plainProduct = JSON.parse(JSON.stringify(product));
 
-  return <ProductForm initialData={plainProduct} />;
+  return (
+    <>
+      <Header />
+      <main className="min-h-screen bg-background py-12">
+        <ProductForm initialData={plainProduct} />
+      </main>
+      <Footer />
+    </>
+  );
 }

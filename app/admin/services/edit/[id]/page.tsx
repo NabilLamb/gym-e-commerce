@@ -1,6 +1,8 @@
 // app/admin/services/edit/[id]/page.tsx
 
 import { notFound } from "next/navigation";
+import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
 import { ServiceForm } from "@/components/admin/ServiceForm";
 import { connectDB } from "@/lib/mongodb";
 import Service from "@/models/Service";
@@ -19,5 +21,13 @@ export default async function EditServicePage({
 
   const plainService = JSON.parse(JSON.stringify(service));
 
-  return <ServiceForm initialData={plainService} />;
+  return (
+    <>
+      <Header />
+      <main className="min-h-screen bg-background py-12">
+        <ServiceForm initialData={plainService} />
+      </main>
+      <Footer />
+    </>
+  );
 }

@@ -39,7 +39,7 @@ export function AdminListRow({
             {hasToggle && isActive !== undefined && (
               <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
                 isActive
-                  ? "bg-green-500/10 text-green-500 border-green-500/20"
+                  ? "bg-[#FF531A]/10 text-[#FF531A] border-[#FF531A]/20"
                   : "bg-red-500/10 text-red-500 border-red-500/20"
               }`}>
                 {isActive ? "Active" : "Hidden"}
@@ -62,7 +62,7 @@ export function AdminListRow({
               variant="outline"
               title={isActive ? "Hide from users" : "Show to users"}
               onClick={() => onToggleActive(id)}
-              className={isActive ? "text-green-500 border-green-500/30 hover:bg-[#FF531A]/10 hover:text-[#FF531A] hover:border-[#FF531A]/30" : "text-red-500 border-red-500/30 hover:bg-red-500/10"}
+              className={isActive ? "text-[#FF531A] border-[#FF531A]/30 hover:bg-[#FF531A]/10 hover:text-[#FF531A] hover:border-[#FF531A]/30 cursor-pointer" : "text-red-500 border-red-500/30 hover:bg-red-500/10 cursor-pointer"}
             >
               {isActive ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
             </Button>

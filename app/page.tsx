@@ -70,7 +70,7 @@ export default async function Home() {
                 <div className="absolute -inset-4 bg-gradient-to-r from-primary to-blue-500 rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
                 <div className="relative w-full h-80 md:h-[500px] rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10">
                   <Image
-                    src="/image-hero.png"
+                    src="/hero-image.png"
                     alt="Gym Hero"
                     fill
                     className="object-cover transition-transform duration-700 group-hover:scale-105"

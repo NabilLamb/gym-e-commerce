@@ -172,10 +172,16 @@ export function ServiceForm({ initialData }: ServiceFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-3xl mx-auto p-6">
-      <h1 className="text-2xl font-bold">
-        {initialData ? "Edit Service" : "Add New Service"}
-      </h1>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-3xl mx-auto px-6">
+      <div className="bg-card border border-border/50 rounded-2xl p-8 shadow-sm space-y-8">
+        <div className="border-b border-border/50 pb-6">
+          <h1 className="text-3xl font-extrabold tracking-tight">
+            {initialData ? "Edit Service" : "Add New Service"}
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            {initialData ? "Update the service details below." : "Fill in the fields to create a new service listing."}
+          </p>
+        </div>
 
       {/* Name */}
       <div>
@@ -322,7 +328,7 @@ export function ServiceForm({ initialData }: ServiceFormProps) {
       </div>
       <p className="text-xs text-muted-foreground -mt-4">
         Status:{" "}
-        <span className={isActive ? "text-green-500 font-medium" : "text-red-500 font-medium"}>
+        <span className={isActive ? "text-[#FF531A] font-medium" : "text-red-500 font-medium"}>
           {isActive ? "Active — visible to users" : "Inactive — hidden from users"}
         </span>
       </p>
@@ -365,12 +371,13 @@ export function ServiceForm({ initialData }: ServiceFormProps) {
       </div>
 
       {/* Actions */}
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={() => router.push("/admin")}>Cancel</Button>
-        <Button type="submit" disabled={isSubmitting}>
+      <div className="flex justify-end gap-3 pt-2">
+        <Button type="button" variant="outline" onClick={() => router.push("/admin")} className="cursor-pointer">Cancel</Button>
+        <Button type="submit" disabled={isSubmitting} className="cursor-pointer">
           {isSubmitting ? "Saving..." : initialData ? "Update Service" : "Create Service"}
         </Button>
       </div>
+      </div>{/* end card */}
     </form>
   );
 }

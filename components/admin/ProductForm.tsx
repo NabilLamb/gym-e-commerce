@@ -152,11 +152,17 @@ export function ProductForm({ initialData }: ProductFormProps) {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="space-y-6 max-w-4xl mx-auto p-6"
+      className="space-y-8 max-w-3xl mx-auto px-6"
     >
-      <h1 className="text-2xl font-bold">
-        {initialData ? "Edit Product" : "Add New Product"}
-      </h1>
+      <div className="bg-card border border-border/50 rounded-2xl p-8 shadow-sm space-y-8">
+        <div className="border-b border-border/50 pb-6">
+          <h1 className="text-3xl font-extrabold tracking-tight">
+            {initialData ? "Edit Product" : "Add New Product"}
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            {initialData ? "Update the product details below." : "Fill in the fields to create a new product listing."}
+          </p>
+        </div>
 
       {/* Name */}
       <div>
@@ -419,16 +425,17 @@ export function ProductForm({ initialData }: ProductFormProps) {
       </div>
 
       {/* Submit */}
-      <div className="flex justify-end gap-2">
+      <div className="flex justify-end gap-3 pt-2">
         <Button
           type="button"
           variant="outline"
           onClick={() => router.push("/admin")}
           disabled={isSubmitting}
+          className="cursor-pointer"
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting} className="cursor-pointer">
           {isSubmitting
             ? "Saving..."
             : initialData
@@ -436,6 +443,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
               : "Create Product"}
         </Button>
       </div>
+      </div>{/* end card */}
     </form>
   );
 }

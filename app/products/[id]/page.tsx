@@ -106,6 +106,7 @@ export default function ProductDetailPage() {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [editingReview, setEditingReview] = useState<Review | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const [fromDashboard, setFromDashboard] = useState(false);
   const [dashboardTab, setDashboardTab] = useState("products");
