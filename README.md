@@ -27,7 +27,7 @@ The project was built to demonstrate production-level full-stack development ski
 | **Cart** — Quantity stepper, order summary | **Checkout** — Shipping form, mock payment, order confirmation |
 | ![Services](screenshots/services.png) | ![Booking](screenshots/booking.png) |
 | **Services Page** — Category filter, Book Now | **Booking** — Service selection, check-in code confirmation |
-| ![Profile](screenshots/profile.png) | ![Dark Mode](screenshots/dark-mode.png) |
+| ![Profile](screenshots/profile.png) | ![Dark Mode](screenshots/light-mode.png) |
 | **Profile** — Orders history, booking history | **Dark Mode** — Full dark/light theme support |
 | ![Contact](screenshots/contact.png) | ![Mobile](screenshots/mobile.png) |
 | **Contact Page** — Form with validation | **Mobile** — Fully responsive on 375px |
