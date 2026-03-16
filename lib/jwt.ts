@@ -2,36 +2,28 @@
 
 import { SignJWT, jwtVerify } from 'jose'
 
-// 1. Get the secret from environment variables
-const JWT_SECRET = process.env.JWT_SECRET
-
-if (!JWT_SECRET) {
-  throw new Error("Please define JWT_SECRET in your environment variables")
+// Don't throw at module level — check at runtime instead
+const getSecret = (): Uint8Array => {
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    throw new Error("JWT_SECRET environment variable is not defined")
+  }
+  return new TextEncoder().encode(secret)
 }
 
-// 2. jose requires the secret to be encoded as a Uint8Array
-const secretKey = new TextEncoder().encode(JWT_SECRET)
-
-/**
- * Creates a signed JWT token
- */
 export async function signToken(payload: any) {
   return await new SignJWT(payload)
-    .setProtectedHeader({ alg: 'HS256' }) // Define the algorithm
+    .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('7d') // Set expiration
-    .sign(secretKey)         // Sign with our encoded secret
+    .setExpirationTime('7d')
+    .sign(getSecret())
 }
 
-/**
- * Verifies a JWT token and returns the payload
- */
 export async function verifyToken(token: string) {
   try {
-    const { payload } = await jwtVerify(token, secretKey)
+    const { payload } = await jwtVerify(token, getSecret())
     return payload
   } catch (error) {
-    // Returns null or throws if the token is expired/invalid
     console.error("JWT Verification failed:", error)
     return null
   }
