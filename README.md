@@ -2,7 +2,7 @@
 
 > A production-ready full-stack web application for gym management, e-commerce, and fitness service booking. Built with Next.js 15, MongoDB, and Cloudinary.
 
-🔗 🔗 **Live Demo:** [fithub-gym-ecom.netlify.app](https://fithub-gym-ecom.netlify.app)
+🔗 🔗 **Live Demo:** [gym-e-commerce-ten.vercel.app](https://gym-e-commerce-ten.vercel.app/)
 📂 **GitHub:** [github.com/NabilLamb/gym-e-commerce](https://github.com/NabilLamb/gym-e-commerce)
 
 ---

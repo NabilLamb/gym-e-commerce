@@ -16,4 +16,4 @@ Allow: /products/
 Allow: /services/
 Allow: /auth/
 
-Sitemap: Sitemap: https://fithub-gym-ecom.netlify.app/sitemap.xml
+Sitemap: Sitemap: https://gym-e-commerce-ten.vercel.app//sitemap.xml
