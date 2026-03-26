@@ -18,13 +18,19 @@ import { ServiceCard } from "@/components/home/ServiceCard";
 
 async function getFeaturedServices() {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/services`, {
+    // Determine the base URL for API calls
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL   // Your production URL
+      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+
+    const res = await fetch(`${baseUrl}/api/services`, {
       cache: "no-store",
     });
+
     if (!res.ok) return [];
     const data = await res.json();
     return data.slice(0, 3);
-  } catch {
+  } catch (error) {
+    console.error("Failed to fetch featured services:", error);
     return [];
   }
 }

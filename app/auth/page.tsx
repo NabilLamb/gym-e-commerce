@@ -128,8 +128,6 @@ function AuthContent() {
     setIsLoading(true)
     try {
       await login(loginEmail, loginPassword)
-      // Use replace so auth page is removed from browser history
-      // User pressing Back won't return to login page
       router.replace(callbackUrl)
     } catch (err: any) {
       setError(err.message)
