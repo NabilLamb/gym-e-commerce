@@ -275,7 +275,7 @@ export default function CartPage() {
                   <Link href="/products" className="block w-full mt-3">
                     <Button
                       variant="outline"
-                      className="w-full rounded-xl cursor-pointer text-muted-foreground hover:text-[#FF531A] hover:border-[#FF531A] dark:hover:text-[#FF531A] dark:hover:border-[#FF531A] transition-colors"
+                      className="w-full rounded-xl cursor-pointer text-muted-foreground hover:text-[#FF531A] hover:border-[#FF531A] dark:hover:text-[#FF531A] dark:hover:border-[#FF531A] hover:bg-transparent transition-colors"
                     >
                       Continue Shopping
                     </Button>
