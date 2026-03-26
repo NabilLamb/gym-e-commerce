@@ -549,7 +549,7 @@ export function ProductDetailClient({ id }: { id: string }) {
                       <p className="text-sm text-muted-foreground">
                         You must be signed in to leave a review.
                       </p>
-                      <Link href="/auth/signin">
+                      <Link href="/auth?mode=login">
                         <Button className="w-full">Sign In to Review</Button>
                       </Link>
                     </div>
